@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 import { Search, Shield, Bell, Activity } from 'lucide-react';
 
 // Configuración de Supabase (Asegúrate de que tus variables de entorno estén en Vercel)
