@@ -34,10 +34,15 @@ export default function G4SMonitoringDashboard() {
     fetchLogs();
   }, []);
 
-  const filteredLogs = logs.filter(log => 
-    log.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.account_number?.includes(searchTerm)
-  );
+  const filteredLogs = logs.filter(log => {
+    const search = searchTerm.toLowerCase();
+    // Esto busca en nombre, número de cuenta y descripción del evento al mismo tiempo
+    return (
+      log.customer_name?.toLowerCase().includes(search) ||
+      log.account_number?.toString().toLowerCase().includes(search) ||
+      log.event_description?.toLowerCase().includes(search)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4 font-sans">
