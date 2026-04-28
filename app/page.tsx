@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Search, Shield, Bell, Activity, Database, AlertTriangle } from 'lucide-react';
+import { Search, Shield, AlertCircle } from 'lucide-react';
 
-// CONFIGURACIÓN DE CONEXIÓN
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -13,30 +12,28 @@ export default function G4SMonitoringDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('alarm_logs')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      setLogs(data || []);
-    } catch (error) {
-      console.error('Error cargando datos:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('alarm_logs')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(100);
+        if (error) throw error;
+        setLogs(data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchLogs();
   }, []);
 
+  // FILTRO MEJORADO: Busca en todas las columnas y no importa Mayúsculas/Minúsculas
   const filteredLogs = logs.filter(log => {
     const search = searchTerm.toLowerCase();
-    // Esto busca en nombre, número de cuenta y descripción del evento al mismo tiempo
     return (
       log.customer_name?.toLowerCase().includes(search) ||
       log.account_number?.toString().toLowerCase().includes(search) ||
@@ -45,56 +42,54 @@ export default function G4SMonitoringDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 font-sans">
-      <header className="flex flex-col md:flex-row justify-between items-center mb-8 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
-        <div className="flex items-center gap-4 mb-4 md:mb-0">
-          <div className="bg-red-600 p-3 rounded-lg shadow-lg shadow-red-900/20">
-            <Shield size={32} className="text-white" />
-          </div>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100-screen', color: 'white', padding: '20px', fontFamily: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <Shield size={40} color="#ef4444" />
           <div>
-            <h1 className="text-2xl font-black tracking-tighter text-white">G4S SMART MONITORING</h1>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Security Dashboard v3.0</p>
+            <h1 style={{ margin: 0, fontSize: '24px', letterSpacing: '-1px' }}>G4S SMART MONITORING</h1>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>SECURITY DASHBOARD V3.0</span>
           </div>
         </div>
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+        <div style={{ position: 'relative' }}>
           <input 
-            type="text"
-            placeholder="Buscar por cliente o cuenta..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-all"
+            type="text" 
+            placeholder="Buscar cuenta o cliente..." 
+            style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: 'white', width: '300px' }}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: '#64748b' }} />
         </div>
       </header>
 
-      <main className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-700/50 text-slate-300 text-xs uppercase tracking-wider">
-                <th className="p-4 font-bold">ID Evento</th>
-                <th className="p-4 font-bold">Cuenta</th>
-                <th className="p-4 font-bold">Cliente</th>
-                <th className="p-4 font-bold">Evento</th>
-                <th className="p-4 font-bold">Fecha/Hora</th>
+      <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#334155', color: '#cbd5e1', fontSize: '12px' }}>
+              <th style={{ padding: '15px' }}>ID EVENTO</th>
+              <th style={{ padding: '15px' }}>CUENTA</th>
+              <th style={{ padding: '15px' }}>CLIENTE</th>
+              <th style={{ padding: '15px' }}>DESCRIPCIÓN</th>
+              <th style={{ padding: '15px' }}>FECHA / HORA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Cargando datos de base de datos...</td></tr>
+            ) : filteredLogs.length === 0 ? (
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#f87171' }}>No se encontraron resultados para "{searchTerm}"</td></tr>
+            ) : filteredLogs.map((log) => (
+              <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
+                <td style={{ padding: '15px', color: '#f87171', fontWeight: 'bold' }}>#{log.id}</td>
+                <td style={{ padding: '15px', color: '#cbd5e1' }}>{log.account_number}</td>
+                <td style={{ padding: '15px', fontWeight: 'bold' }}>{log.customer_name}</td>
+                <td style={{ padding: '15px', fontSize: '14px' }}>{log.event_description}</td>
+                <td style={{ padding: '15px', color: '#94a3b8', fontSize: '13px' }}>{new Date(log.event_time).toLocaleString()}</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700">
-              {loading ? (
-                <tr><td colSpan={5} className="p-10 text-center text-slate-500">Cargando registros...</td></tr>
-              ) : filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-750 transition-colors">
-                  <td className="p-4 font-mono text-red-400">#{log.id}</td>
-                  <td className="p-4 text-slate-300">{log.account_number}</td>
-                  <td className="p-4 font-semibold">{log.customer_name}</td>
-                  <td className="p-4 text-sm">{log.event_description}</td>
-                  <td className="p-4 text-slate-400 text-sm">{new Date(log.event_time).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </main>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
