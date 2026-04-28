@@ -31,20 +31,17 @@ export default function G4SMonitoringDashboard() {
     fetchLogs();
   }, []);
 
- const filteredLogs = logs.filter(log => {
-    // 1. Limpiamos lo que el usuario escribe (quitamos espacios y pasamos a minúsculas)
-    const search = searchTerm.trim().toLowerCase();
-    
-    if (search === "") return true;
-
-    // 2. Preparamos los datos de la base de datos para comparar
-    const cliente = (log.customer_name || "").toString().toLowerCase();
-    const cuenta = (log.account_number || "").toString().toLowerCase();
-    const desc = (log.event_description || "").toString().toLowerCase();
-
-    // 3. Comparamos (buscamos si el texto está incluido en alguna parte)
-    return cliente.includes(search) || cuenta.includes(search) || desc.includes(search);
-  });
+{filteredLogs.map((log) => (
+  <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
+    <td style={{ padding: '15px', color: '#f87171', fontWeight: 'bold' }}>#{log.id}</td>
+    <td style={{ padding: '15px', color: '#cbd5e1' }}>{log.cuenta}</td>
+    <td style={{ padding: '15px', fontWeight: 'bold' }}>{log.cliente}</td>
+    <td style={{ padding: '15px', fontSize: '14px' }}>{log.evento}</td>
+    <td style={{ padding: '15px', color: '#94a3b8', fontSize: '13px' }}>
+      {new Date(log.created_at).toLocaleString()} 
+    </td>
+  </tr>
+))}
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100-screen', color: 'white', padding: '20px', fontFamily: 'sans-serif' }}>
