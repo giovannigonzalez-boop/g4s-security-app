@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Actualización final
 import { createClient } from '@supabase/supabase-js';
 import { Search, Shield, Bell, Activity, Database, AlertTriangle } from 'lucide-react';
 
