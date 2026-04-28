@@ -76,7 +76,7 @@ export default function G4SMonitoringDashboard() {
             </thead>
             <tbody className="divide-y divide-slate-700">
               {loading ? (
-                <tr><td colSpan="5" className="p-10 text-center text-slate-500">Cargando registros...</td></tr>
+                <tr><td colSpan={5} className="p-10 text-center text-slate-500">Cargando registros...</td></tr>
               ) : filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-750 transition-colors">
                   <td className="p-4 font-mono text-red-400">#{log.id}</td>
