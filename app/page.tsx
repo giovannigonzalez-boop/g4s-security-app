@@ -3,45 +3,40 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Search, Shield } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
 
 export default function G4SMonitoringDashboard() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
- useEffect(() => {
-    const fetchLogs = async () => {
+  useEffect(() => {
+    async function getLogs() {
       try {
-        console.log("Intentando conectar...");
+        // Consultamos la tabla exacta que vimos en tu captura
         const { data, error } = await supabase
           .from('alarm_logs')
-          .select('*')
-          .limit(10); // Probamos con solo 10 registros
-        
-        if (error) {
-          alert("Error de Supabase: " + error.message);
-          throw error;
-        }
-        
-        console.log("Datos recibidos:", data);
+          .select('id, created_at, cuenta, nombre_cliente, tipo_evento')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
         setLogs(data || []);
       } catch (err) {
-        console.error("Fallo total:", err);
+        console.error("Error cargando datos:", err);
       } finally {
         setLoading(false);
       }
-    };
-    fetchLogs();
+    }
+    getLogs();
   }, []);
 
-  // FILTRO CORREGIDO CON TUS COLUMNAS REALES
   const filteredLogs = logs.filter(log => {
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
-    
     return (
       log.cuenta?.toLowerCase().includes(s) ||
       log.nombre_cliente?.toLowerCase().includes(s) ||
@@ -54,18 +49,14 @@ export default function G4SMonitoringDashboard() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #334155' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <Shield size={40} color="#ef4444" />
-          <div>
-            <h1 style={{ margin: 0, fontSize: '24px' }}>G4S SMART MONITORING</h1>
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>SECURITY DASHBOARD V3.0</span>
-          </div>
+          <div><h1 style={{ margin: 0, fontSize: '24px' }}>G4S SMART MONITORING</h1><span style={{ fontSize: '12px', color: '#94a3b8' }}>DASHBOARD V3.0</span></div>
         </div>
         <div style={{ position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: '#64748b' }} />
           <input 
             type="text" 
-            placeholder="Buscar cuenta (ej: BOG779B)..." 
+            placeholder="Buscar cuenta o cliente..." 
             style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: 'white', width: '300px' }}
-            value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
@@ -79,14 +70,14 @@ export default function G4SMonitoringDashboard() {
               <th style={{ padding: '15px' }}>CUENTA</th>
               <th style={{ padding: '15px' }}>CLIENTE</th>
               <th style={{ padding: '15px' }}>EVENTO</th>
-              <th style={{ padding: '15px' }}>FECHA</th>
+              <th style={{ padding: '15px' }}>FECHA / HORA</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Conectando a base de datos...</td></tr>
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Cargando datos...</td></tr>
             ) : filteredLogs.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#f87171' }}>No se encontró la cuenta "{searchTerm}"</td></tr>
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#f87171' }}>Sin registros para "{searchTerm}"</td></tr>
             ) : filteredLogs.map((log) => (
               <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
                 <td style={{ padding: '15px', color: '#f87171' }}>#{log.id}</td>
