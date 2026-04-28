@@ -12,18 +12,24 @@ export default function G4SMonitoringDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchLogs = async () => {
       try {
+        console.log("Intentando conectar...");
         const { data, error } = await supabase
           .from('alarm_logs')
           .select('*')
-          .order('id', { ascending: false })
-          .limit(100);
-        if (error) throw error;
+          .limit(10); // Probamos con solo 10 registros
+        
+        if (error) {
+          alert("Error de Supabase: " + error.message);
+          throw error;
+        }
+        
+        console.log("Datos recibidos:", data);
         setLogs(data || []);
       } catch (err) {
-        console.error("Error de conexión:", err);
+        console.error("Fallo total:", err);
       } finally {
         setLoading(false);
       }
