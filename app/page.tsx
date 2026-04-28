@@ -31,14 +31,19 @@ export default function G4SMonitoringDashboard() {
     fetchLogs();
   }, []);
 
-  // FILTRO MEJORADO: Busca en todas las columnas y no importa Mayúsculas/Minúsculas
-  const filteredLogs = logs.filter(log => {
-    const search = searchTerm.toLowerCase();
-    return (
-      log.customer_name?.toLowerCase().includes(search) ||
-      log.account_number?.toString().toLowerCase().includes(search) ||
-      log.event_description?.toLowerCase().includes(search)
-    );
+ const filteredLogs = logs.filter(log => {
+    // 1. Limpiamos lo que el usuario escribe (quitamos espacios y pasamos a minúsculas)
+    const search = searchTerm.trim().toLowerCase();
+    
+    if (search === "") return true;
+
+    // 2. Preparamos los datos de la base de datos para comparar
+    const cliente = (log.customer_name || "").toString().toLowerCase();
+    const cuenta = (log.account_number || "").toString().toLowerCase();
+    const desc = (log.event_description || "").toString().toLowerCase();
+
+    // 3. Comparamos (buscamos si el texto está incluido en alguna parte)
+    return cliente.includes(search) || cuenta.includes(search) || desc.includes(search);
   });
 
   return (
