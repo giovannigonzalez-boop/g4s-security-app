@@ -21,7 +21,7 @@ export default function G4SProDashboard() {
     try {
       const { data, error } = await supabase
         .from('alarm_logs')
-        .select('id, nombre_client, cuenta, tipo_evento, ciudad, fecha_evento')
+        .select('id, nombre_cliente, cuenta, tipo_evento, ciudad, fecha_evento')
         .order('id', { ascending: false });
       
       if (error) throw error;
