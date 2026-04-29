@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, Bell, Power, ShieldCheck, RefreshCw, Search, 
-  MapPin, Hash, AlertTriangle, CheckCircle2, XCircle, ChevronRight
+  AlertTriangle, CheckCircle2, XCircle, ChevronRight, LogOut, Settings
 } from 'lucide-react';
 
+// Conexión directa usando las variables de Vercel
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -14,123 +15,129 @@ const supabase = createClient(
 export default function Page() {
   const [logs, setLogs] = useState<any[]>([]);
   const [isArmed, setIsArmed] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  // FUNCIÓN DE CARGA REFORZADA
   async function fetchG4SData() {
-    setLoading(true);
-    const { data, error } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(6);
-    if (data) setLogs(data);
-    if (error) console.error(error);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('alarm_logs')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(6);
+
+      if (error) {
+        console.error("Error de Supabase:", error.message);
+      } else {
+        setLogs(data || []);
+      }
+    } catch (err) {
+      console.error("Error de conexión:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function simulateEvent(tipo: string, cliente: string = "Simulación G4S", cuenta: string = "SIM-999") {
+  // FUNCIÓN DE SIMULACIÓN
+  async function simulateEvent(tipo: string) {
     const nuevo = {
-      nombre_cliente: cliente, cuenta: cuenta, tipo_evento: tipo,
-      ciudad: "Central G4S", fecha_evento: new Date().toLocaleTimeString(),
+      nombre_cliente: "G4S User - Prueba",
+      cuenta: "BAQ-3733",
+      tipo_evento: tipo,
+      ciudad: "Barranquilla",
+      fecha_evento: new Date().toLocaleTimeString(),
     };
+    
     const { error } = await supabase.from('alarm_logs').insert([nuevo]);
-    if (!error) fetchG4SData();
+    if (error) alert("Error al insertar: " + error.message);
+    else fetchG4SData();
   }
 
-  useEffect(() => { fetchG4SData(); }, []);
-
-  const filteredLogs = logs.filter(log => 
-    String(log.nombre_cliente || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    String(log.cuenta || "").toLowerCase().includes(searchTerm)
-  );
+  useEffect(() => {
+    fetchG4SData();
+  }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F0F3F6', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F4F7FA', fontFamily: 'sans-serif' }}>
       
-      {/* SIDEBAR COMPACTO */}
-      <nav style={{ width: '100px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E0E6ED', padding: '20px 10px', position: 'fixed', height: '100vh', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ backgroundColor: '#E11D48', color: 'white', width: '60px', height: '60px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '20px', marginBottom: '40px' }}>G4S</div>
-        <div style={{ color: '#E11D48', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 'bold' }}><Home size={24}/><br/>Inicio</div>
+      {/* SIDEBAR */}
+      <nav style={{ width: '90px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E8ECEF', padding: '30px 0', position: 'fixed', height: '100vh', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
+          <div style={{ backgroundColor: '#E11D48', color: 'white', width: '50px', height: '50px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(225, 29, 72, 0.3)' }}>G4S</div>
+          <div style={{ color: '#E11D48', textAlign: 'center' }}><Home size={28} /><div style={{ fontSize: '10px', fontWeight: 'bold' }}>INICIO</div></div>
+        </div>
+        <div onClick={() => window.location.reload()} style={{ color: '#718096', textAlign: 'center', cursor: 'pointer', marginBottom: '20px' }}>
+          <LogOut size={28} /><div style={{ fontSize: '10px', fontWeight: 'bold' }}>SALIR</div>
+        </div>
       </nav>
 
-      {/* CONTENIDO PRINCIPAL (ZONA DE WIDGETS) */}
-      <main style={{ flex: 1, marginLeft: '100px', padding: '30px' }}>
-        
-        {/* HEADER */}
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#1A1C21', margin: 0 }}>Panel de Control</h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={{ position: 'relative' }}>
-              <Search style={{ position: 'absolute', left: '12px', top: '10px', color: '#A0AEC0' }} size={18} />
-              <input type="text" placeholder="Buscar cuenta..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '10px 15px 10px 40px', borderRadius: '20px', border: '1px solid #E0E6ED', width: '200px', outline: 'none', backgroundColor: 'white' }} />
-            </div>
-            <button onClick={fetchG4SData} style={{ padding: '10px', borderRadius: '50%', border: '1px solid #E0E6ED', backgroundColor: 'white', cursor: 'pointer', color: '#718096' }}><RefreshCw size={18} className={loading ? 'animate-spin' : ''}/></button>
-          </div>
+      {/* CONTENIDO */}
+      <main style={{ flex: 1, marginLeft: '90px', padding: '40px' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#2D3748' }}>G4S Monitoring System</h1>
+          <button onClick={fetchG4SData} style={{ padding: '10px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: 'white', cursor: 'pointer' }}>
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''}/>
+          </button>
         </header>
 
-        {/* GRILLA DE WIDGETS (COMO LAS IMÁGENES) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
           
-          {/* WIDGET 1: ESTADO DE ALARMA (Estilo image_36.png) */}
-          <div style={{ gridColumn: 'span 2', backgroundColor: 'white', borderRadius: '16px', padding: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: `10px solid ${isArmed ? '#31A24C' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', backgroundColor: isArmed ? '#F0FFF4' : '#FFF5F5', cursor: 'pointer' }}
-              onClick={() => { setIsArmed(!isArmed); simulateEvent(isArmed ? 'DESARMADO DESDE APP' : 'ARMADO DESDE APP'); }}>
-              {isArmed ? <CheckCircle2 size={70} color="#31A24C" /> : <XCircle size={70} color="#E11D48" />}
+          {/* WIDGET ARMADO */}
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '40px', boxShadow: '0 10px 25px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div onClick={() => { setIsArmed(!isArmed); simulateEvent(isArmed ? 'DESARMADO' : 'ARMADO'); }}
+              style={{ width: '160px', height: '160px', borderRadius: '50%', border: `8px solid ${isArmed ? '#38A169' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '25px', backgroundColor: isArmed ? '#F0FFF4' : '#FFF5F5', cursor: 'pointer' }}>
+              {isArmed ? <CheckCircle2 size={60} color="#38A169" /> : <XCircle size={60} color="#E11D48" />}
             </div>
-            <h2 style={{ color: isArmed ? '#31A24C' : '#E11D48', fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0' }}>{isArmed ? 'ARMADO' : 'DESARMADO'}</h2>
-            <p style={{ color: '#718096', fontSize: '14px', margin: 0 }}>Partición 1</p>
-            <p style={{ color: '#A0AEC0', fontSize: '11px', marginTop: '15px' }}>Haz clic en el círculo para cambiar estado</p>
+            <h2 style={{ fontSize: '20px', color: '#4A5568', margin: 0 }}>Partición 1</h2>
+            <h3 style={{ color: isArmed ? '#38A169' : '#E11D48', fontWeight: 'bold', marginTop: '10px' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</h3>
           </div>
 
-          {/* WIDGET 2: SIMULADOR RÁPIDO */}
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-            <h3 style={{ fontSize: '16px', color: '#4A5568', marginBottom: '15px', borderBottom: '1px solid #F0F3F6', paddingBottom: '10px' }}>Simulador de Central</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <SimPill icon={<Bell size={16}/>} label="Pánico" color="#E11D48" onClick={() => simulateEvent('PÁNICO LOCAL')} />
-              <SimPill icon={<Power size={16}/>} label="Apertura" color="#31A24C" onClick={() => simulateEvent('APERTURA')} />
-              <SimPill icon={<ShieldCheck size={16}/>} label="Cierre" color="#1877F2" onClick={() => simulateEvent('CIERRE')} />
+          {/* COMANDOS */}
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '25px', boxShadow: '0 10px 25px rgba(0,0,0,0.03)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#718096', marginBottom: '20px' }}>Simular Señal</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <button onClick={() => simulateEvent('ALERTA DE PÁNICO')} style={btnStyle}><Bell size={18} color="#E11D48"/> Pánico</button>
+              <button onClick={() => simulateEvent('APERTURA LOCAL')} style={btnStyle}><Power size={18} color="#38A169"/> Apertura</button>
+              <button onClick={() => simulateEvent('CIERRE SISTEMA')} style={btnStyle}><ShieldCheck size={18} color="#3182CE"/> Cierre</button>
+              <button onClick={() => simulateEvent('TEST DE RED')} style={btnStyle}><RefreshCw size={18} color="#718096"/> Test</button>
             </div>
           </div>
 
-          {/* WIDGET 3: ACTIVIDAD RECIENTE (Estilo image_38.png) */}
-          <div style={{ gridColumn: 'span 2', backgroundColor: 'white', borderRadius: '16px', padding: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ fontSize: '16px', color: '#4A5568', margin: 0 }}>Actividad reciente</h3>
-              <ChevronRight size={20} color="#A0AEC0" />
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-                <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #F0F3F6' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {getEventIcon(log.tipo_evento)}
+          {/* ACTIVIDAD RECIENTE (Aquí conectamos la BD) */}
+          <div style={{ gridColumn: 'span 2', backgroundColor: 'white', borderRadius: '24px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.03)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#2D3748', marginBottom: '20px' }}>Actividad de la Base de Datos</h3>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {logs.length > 0 ? logs.map((log) => (
+                <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: '1px solid #F7FAFC' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ padding: '10px', borderRadius: '12px', backgroundColor: '#F0F4F8' }}>
+                      <ShieldCheck size={20} color="#4A5568"/>
+                    </div>
                     <div>
-                      <div style={{ fontSize: '14px', color: '#1A1C21' }}>{log.nombre_cliente} - {log.ciudad}</div>
-                      <div style={{ fontSize: '11px', color: '#718096' }}>{log.fecha_evento}</div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{log.nombre_cliente}</div>
+                      <div style={{ fontSize: '12px', color: '#A0AEC0' }}>{log.fecha_evento} • {log.ciudad}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '12px', color: '#4A5568', fontWeight: 'bold' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '10px', color: '#A0AEC0' }}>Cuenta: {log.cuenta}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#4A5568' }}>{log.tipo_evento}</div>
+                    <div style={{ fontSize: '11px', color: '#CBD5E0' }}>Cuenta: {log.cuenta}</div>
                   </div>
                 </div>
-              )) : <p style={{textAlign:'center', color:'#A0AEC0', padding:'20px'}}>No hay actividad</p>}
+              )) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#A0AEC0' }}>
+                  {loading ? "Cargando datos..." : "No se encontraron señales en Supabase"}
+                </div>
+              )}
             </div>
           </div>
-
         </div>
       </main>
     </div>
   );
 }
 
-// COMPONENTES DE ESTILO AUXILIARES
-const SimPill = ({ icon, label, color, onClick }) => (
-  <button onClick={onClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '15px 10px', backgroundColor: '#F7FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', color: color, fontWeight: 'bold', fontSize: '12px' }}>
-    {icon} {label}
-  </button>
-);
-
-function getEventIcon(tipo: string) {
-  if (tipo?.includes('Alarma') || tipo?.includes('PÁNICO')) return <AlertTriangle size={20} color="#E11D48" style={{backgroundColor: '#FFF5F5', padding: '8px', borderRadius: '50%'}} />;
-  if (tipo?.includes('Apertura')) return <Power size={20} color="#31A24C" style={{backgroundColor: '#F0FFF4', padding: '8px', borderRadius: '50%'}} />;
-  if (tipo?.includes('Cierre') || tipo?.includes('APP')) return <ShieldCheck size={20} color="#1877F2" style={{backgroundColor: '#E6F0FF', padding: '8px', borderRadius: '50%'}} />;
-  return <Bell size={20} color="#718096" style={{backgroundColor: '#F7FAFC', padding: '8px', borderRadius: '50%'}} />;
-}
+const btnStyle = {
+  padding: '15px', backgroundColor: '#F8FAFC', border: '1px solid #EDF2F7', borderRadius: '16px', 
+  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold' as const, color: '#4A5568'
+};
