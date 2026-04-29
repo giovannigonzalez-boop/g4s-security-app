@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/request';
+import type { NextRequest } from 'next/server'; // Corregido: ahora viene de server
 
 export function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -7,18 +7,21 @@ export function middleware(req: NextRequest) {
   const USER = process.env.DASHBOARD_USER;
   const PASS = process.env.DASHBOARD_PASSWORD;
 
-  // Si no hay variables, dejamos pasar para no bloquear la app por error
+  // Si no hay variables en Vercel, dejamos pasar para no bloquear la app
   if (!USER || !PASS) return NextResponse.next();
 
   if (authHeader) {
-    const auth = authHeader.split(' ')[1];
-    // Usamos atob (estándar moderno) en lugar de Buffer
-    const decoded = atob(auth).split(':');
-    const user = decoded[0];
-    const pass = decoded[1];
+    try {
+      const auth = authHeader.split(' ')[1];
+      const decoded = atob(auth).split(':');
+      const user = decoded[0];
+      const pass = decoded[1];
 
-    if (user === USER && pass === PASS) {
-      return NextResponse.next();
+      if (user === USER && pass === PASS) {
+        return NextResponse.next();
+      }
+    } catch (e) {
+      // Si hay error en el formato de login, sigue pidiendo datos
     }
   }
 
@@ -33,11 +36,7 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Coincide con todas las rutas excepto las que empiezan por:
-     * - api (rutas de API)
-     * - _next/static (archivos estáticos)
-     * - _next/image (optimización de imágenes)
-     * - favicon.ico (icono de la pestaña)
+     * Protege todo excepto archivos internos de Next.js y estáticos
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
