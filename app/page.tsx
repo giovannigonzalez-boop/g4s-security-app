@@ -21,7 +21,7 @@ export default function G4SFinalDashboard() {
     try {
       const { data, error } = await supabase
         .from('alarm_logs')
-        .select('*') // Traemos todo para evitar errores de nombres
+        .select('*')
         .order('id', { ascending: false });
       
       if (error) throw error;
