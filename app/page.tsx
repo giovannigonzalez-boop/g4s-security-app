@@ -21,11 +21,10 @@ export default function G4SMonitoringDashboard() {
           .select('*')
           .order('created_at', { ascending: false })
           .limit(50);
-
         if (error) throw error;
         setLogs(data || []);
       } catch (err) {
-        console.error("Error cargando datos:", err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
@@ -36,11 +35,9 @@ export default function G4SMonitoringDashboard() {
   const filteredLogs = logs.filter(log => {
     const s = searchTerm.toLowerCase().trim();
     if (!s) return true;
-    
     const cliente = String(log.nombre_cliente || "").toLowerCase();
     const n_cuenta = String(log.cuenta || "").toLowerCase();
     const evento = String(log.tipo_evento || "").toLowerCase();
-
     return cliente.includes(s) || n_cuenta.includes(s) || evento.includes(s);
   });
 
@@ -59,4 +56,44 @@ export default function G4SMonitoringDashboard() {
           <input 
             type="text" 
             placeholder="Buscar cuenta o cliente..." 
-            style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f1
+            style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: 'white', width: '300px' }}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </header>
+
+      <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#334155', color: '#cbd5e1', fontSize: '12px' }}>
+              <th style={{ padding: '15px' }}>ID</th>
+              <th style={{ padding: '15px' }}>CUENTA</th>
+              <th style={{ padding: '15px' }}>CLIENTE</th>
+              <th style={{ padding: '15px' }}>EVENTO</th>
+              <th style={{ padding: '15px' }}>FECHA / HORA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Cargando datos...</td></tr>
+            ) : filteredLogs.length === 0 ? (
+              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#f87171' }}>Sin registros para "{searchTerm}"</td></tr>
+            ) : (
+              filteredLogs.map((log) => (
+                <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
+                  <td style={{ padding: '15px', color: '#f87171' }}>#{log.id}</td>
+                  <td style={{ padding: '15px' }}>{log.cuenta}</td>
+                  <td style={{ padding: '15px', fontWeight: 'bold' }}>{log.nombre_cliente}</td>
+                  <td style={{ padding: '15px' }}>{log.tipo_evento}</td>
+                  <td style={{ padding: '15px', color: '#94a3b8', fontSize: '13px' }}>
+                    {new Date(log.created_at).toLocaleString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
