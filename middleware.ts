@@ -4,13 +4,18 @@ import type { NextRequest } from 'next/request';
 export function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
 
-  // Estas son las variables que pusiste en Vercel
   const USER = process.env.DASHBOARD_USER;
   const PASS = process.env.DASHBOARD_PASSWORD;
 
+  // Si no hay variables, dejamos pasar para no bloquear la app por error
+  if (!USER || !PASS) return NextResponse.next();
+
   if (authHeader) {
     const auth = authHeader.split(' ')[1];
-    const [user, pass] = Buffer.from(auth, 'base64').toString().split(':');
+    // Usamos atob (estándar moderno) en lugar de Buffer
+    const decoded = atob(auth).split(':');
+    const user = decoded[0];
+    const pass = decoded[1];
 
     if (user === USER && pass === PASS) {
       return NextResponse.next();
@@ -25,7 +30,15 @@ export function middleware(req: NextRequest) {
   });
 }
 
-// Esto protege todas las rutas de la aplicación
 export const config = {
-  matcher: '/:path*',
+  matcher: [
+    /*
+     * Coincide con todas las rutas excepto las que empiezan por:
+     * - api (rutas de API)
+     * - _next/static (archivos estáticos)
+     * - _next/image (optimización de imágenes)
+     * - favicon.ico (icono de la pestaña)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };
