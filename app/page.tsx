@@ -18,7 +18,7 @@ export default function G4SProDashboard() {
   async function fetchG4SData() {
     setLoading(true);
     try {
-      // COLUMNA CORREGIDA: nombre_cliente (con 'e' al final)
+      // Usando nombre_cliente (con 'e') como en tu DB
       const { data, error } = await supabase
         .from('alarm_logs')
         .select('id, nombre_cliente, cuenta, tipo_evento, ciudad, fecha_evento')
@@ -27,7 +27,7 @@ export default function G4SProDashboard() {
       if (error) throw error;
       setLogs(data || []);
     } catch (error: any) {
-      console.error("Error:", error.message);
+      console.error("Error cargando datos:", error.message);
     } finally {
       setLoading(false);
     }
@@ -35,9 +35,11 @@ export default function G4SProDashboard() {
 
   useEffect(() => { fetchG4SData(); }, []);
 
+  // Lógica del buscador corregida para usar nombre_cliente
   const filteredLogs = logs.filter(log => 
     log.nombre_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.cuenta?.toString().includes(searchTerm)
+    log.cuenta?.toString().includes(searchTerm) ||
+    log.tipo_evento?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const sidebarBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -68,7 +70,7 @@ export default function G4SProDashboard() {
                 placeholder="Buscar cliente o cuenta..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ padding: '10px 15px 10px 40px', borderRadius: '20px', border: '1px solid #DADDE1', width: '250px' }}
+                style={{ padding: '10px 15px 10px 40px', borderRadius: '20px', border: '1px solid #DADDE1', width: '250px', outline: 'none' }}
               />
             </div>
             <button onClick={fetchG4SData} style={{ padding: '10px', borderRadius: '50%', border: '1px solid #DADDE1', backgroundColor: 'white', cursor: 'pointer' }}>
@@ -85,11 +87,17 @@ export default function G4SProDashboard() {
                 <div>
                   <div style={{ fontWeight: 'bold', color: '#E11D48' }}>{log.tipo_evento}</div>
                   <div style={{ fontSize: '14px', fontWeight: '600' }}>{log.nombre_cliente}</div>
-                  <div style={{ fontSize: '12px', color: '#606770' }}><Hash size={12} style={{display:'inline'}}/> {log.cuenta} | <MapPin size={12} style={{display:'inline'}}/> {log.ciudad}</div>
+                  <div style={{ fontSize: '12px', color: '#606770' }}>
+                    <Hash size={12} style={{display:'inline'}}/> {log.cuenta} | <MapPin size={12} style={{display:'inline'}}/> {log.ciudad}
+                  </div>
                 </div>
                 <div style={{ fontSize: '12px', color: '#90949C' }}>{log.fecha_evento}</div>
               </div>
-            )) : <p style={{textAlign:'center', color:'#999'}}>{loading ? 'Cargando...' : 'No se encontraron resultados'}</p>}
+            )) : (
+              <div style={{textAlign:'center', padding:'40px', color:'#999'}}>
+                {loading ? 'Cargando...' : searchTerm ? `No hay resultados para "${searchTerm}"` : 'No hay datos disponibles'}
+              </div>
+            )}
           </div>
 
           <div onClick={() => setIsArmed(!isArmed)} style={{ flex: 1, backgroundColor: 'white', borderRadius: '12px', padding: '30px', textAlign: 'center' as const, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', height: 'fit-content' }}>
