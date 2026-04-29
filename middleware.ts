@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server'; // Corregido: ahora viene de server
+import type { NextRequest } from 'next/server'; // IMPORTANTE: Ambos vienen de 'next/server'
 
 export function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -7,7 +7,7 @@ export function middleware(req: NextRequest) {
   const USER = process.env.DASHBOARD_USER;
   const PASS = process.env.DASHBOARD_PASSWORD;
 
-  // Si no hay variables en Vercel, dejamos pasar para no bloquear la app
+  // Si no hay variables, dejamos pasar para no bloquear
   if (!USER || !PASS) return NextResponse.next();
 
   if (authHeader) {
@@ -21,7 +21,7 @@ export function middleware(req: NextRequest) {
         return NextResponse.next();
       }
     } catch (e) {
-      // Si hay error en el formato de login, sigue pidiendo datos
+      // Error de decodificación
     }
   }
 
@@ -35,9 +35,6 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Protege todo excepto archivos internos de Next.js y estáticos
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
