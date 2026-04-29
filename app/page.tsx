@@ -18,10 +18,10 @@ export default function G4SMonitoringDashboard() {
       try {
         // Consultamos la tabla exacta que vimos en tu captura
         const { data, error } = await supabase
-          .from('alarm_logs')
-          .select('id, created_at, cuenta, nombre_cliente, tipo_evento')
-          .order('created_at', { ascending: false })
-          .limit(50);
+  .from('alarm_logs')
+  .select('*') // Traemos todo para evitar errores de nombres
+  .order('created_at', { ascending: false })
+  .limit(50);
 
         if (error) throw error;
         setLogs(data || []);
