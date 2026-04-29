@@ -1,112 +1,144 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Shield, Home, Bell, Power, ShieldCheck, RefreshCw, CheckCircle2, XCircle, Search, ChevronRight, MapPin, Clock } from 'lucide-react';
+import { 
+  Shield, Home, Bell, Power, ShieldCheck, RefreshCw, 
+  CheckCircle2, XCircle, Search, LogOut, ShieldOff, AlertTriangle 
+} from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function Page() {
+// --- PANTALLA DE LOGIN ---
+function LoginPage({ onLogin }: { onLogin: () => void }) {
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', fontFamily: 'sans-serif' }}>
+      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', width: '350px', textAlign: 'center' }}>
+        <div style={{ backgroundColor: '#E11D48', color: 'white', width: '60px', height: '60px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '24px', margin: '0 auto 20px' }}>G4S</div>
+        <h2 style={{ marginBottom: '20px' }}>Ingreso Seguro</h2>
+        <input type="text" placeholder="Usuario" style={inputStyle} />
+        <input type="password" placeholder="Contraseña" style={inputStyle} />
+        <button onClick={onLogin} style={{ width: '100%', padding: '12px', backgroundColor: '#E11D48', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>Entrar</button>
+      </div>
+    </div>
+  );
+}
+
+// --- DASHBOARD PRINCIPAL ---
+function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [logs, setLogs] = useState<any[]>([]);
   const [isArmed, setIsArmed] = useState(true);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  async function fetchG4SData() {
+  const fetchG4SData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(6);
+    const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(8);
     if (data) setLogs(data);
     setLoading(false);
-  }
+  };
 
-  async function simulateEvent(tipo: string, cliente: string = "Simulación G4S", cuenta: string = "SIM-999") {
-    const nuevoEvento = {
-      nombre_cliente: cliente,
-      cuenta: cuenta,
-      tipo_evento: tipo,
-      ciudad: "Central de Monitoreo",
-      fecha_evento: new Date().toLocaleTimeString(),
-    };
-    const { error } = await supabase.from('alarm_logs').insert([nuevoEvento]);
+  const simulateEvent = async (tipo: string, cliente: string = "G4S User", cuenta: string = "BAQ-3733") => {
+    const nuevo = { nombre_cliente: cliente, cuenta: cuenta, tipo_evento: tipo, ciudad: "Barranquilla", fecha_evento: new Date().toLocaleTimeString() };
+    const { error } = await supabase.from('alarm_logs').insert([nuevo]);
     if (!error) fetchG4SData();
-  }
+  };
 
   useEffect(() => { fetchG4SData(); }, []);
 
+  // Lógica de búsqueda corregida
   const filteredLogs = logs.filter(log => 
     log.nombre_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     log.cuenta?.toString().includes(searchTerm)
   );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB', color: '#111827', fontFamily: '"Inter", sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB', fontFamily: 'sans-serif' }}>
       
-      {/* SIDEBAR LIMPIO (Inspirado en limpieza de Alarm.com) */}
-      <nav style={{ width: '260px', backgroundColor: '#FFFFFF', padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '15px', borderRight: '1px solid #E5E7EB' }}>
+      {/* SIDEBAR */}
+      <nav style={{ width: '260px', backgroundColor: '#FFFFFF', padding: '30px 20px', display: 'flex', flexDirection: 'column', borderRight: '1px solid #E5E7EB', position: 'fixed', height: '100vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
-          <div style={{ backgroundColor: '#E11D48', color: 'white', padding: '12px', borderRadius: '10px' }}><Shield size={24}/></div>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>G4S <span style={{fontWeight:'normal', color:'#6B7280'}}>MONITORING</span></div>
+          <div style={{ backgroundColor: '#E11D48', color: 'white', padding: '10px', borderRadius: '8px' }}><Shield size={24}/></div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>G4S <span style={{fontWeight:'400'}}>SECURITY</span></div>
         </div>
         
-        <SidebarLink icon={<Home size={20}/>} label="Panel de Control" active />
-        
-        <p style={{ fontSize: '12px', color: '#6B7280', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '20px' }}>Simulador</p>
-        <SidebarLink icon={<Bell size={20} color="#E11D48"/>} label="Simular Pánico" onClick={() => simulateEvent('PÁNICO LOCAL')} />
-        <SidebarLink icon={<Power size={20} color="#10B981"/>} label="Simular Apertura" onClick={() => simulateEvent('APERTURA')} />
-        <SidebarLink icon={<ShieldCheck size={20} color="#3B82F6"/>} label="Simular Cierre" onClick={() => simulateEvent('CIERRE')} />
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: '#FEE2E2', color: '#E11D48', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+            <Home size={20}/> Panel de Control
+          </div>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'bold', marginTop: '30px', textTransform: 'uppercase' }}>Acciones Rápidas</p>
+          <button onClick={() => simulateEvent('ALERTA DE PÁNICO')} style={actionBtn}><Bell size={18} color="#E11D48"/> Simular Pánico</button>
+          <button onClick={() => simulateEvent('TEST DE RED')} style={actionBtn}><RefreshCw size={18} color="#6B7280"/> Enviar Test</button>
+        </div>
+
+        {/* BOTÓN SALIR REINTEGRADO */}
+        <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', border: 'none', backgroundColor: 'transparent', color: '#E11D48', fontWeight: 'bold', cursor: 'pointer', borderTop: '1px solid #F3F4F6' }}>
+          <LogOut size={20}/> Cerrar Sesión
+        </button>
       </nav>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <main style={{ flex: 1, padding: '40px' }}>
+      {/* CONTENIDO */}
+      <main style={{ flex: 1, marginLeft: '260px', padding: '40px' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Monitor de Seguridad</h1>
-          
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Cola de Monitoreo</h1>
+          <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ position: 'relative' }}>
               <Search style={{ position: 'absolute', left: '12px', top: '10px', color: '#9CA3AF' }} size={18} />
-              <input type="text" placeholder="Buscar cuenta o cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #D1D5DB', width: '280px', backgroundColor: 'white' }} />
+              <input 
+                type="text" 
+                placeholder="Buscar cuenta o cliente..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid #D1D5DB', width: '250px' }} 
+              />
             </div>
-            <button onClick={fetchG4SData} style={{ padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#E11D48', color: 'white', cursor: 'pointer' }}>
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''}/>
+            <button onClick={fetchG4SData} style={{ padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} color="#6B7280" />
             </button>
           </div>
         </header>
 
-        <div style={{ display: 'flex', gap: '30px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '25px' }}>
           
-          {/* TABLA DE EVENTOS (Refinada y legible) */}
-          <div style={{ flex: 2, backgroundColor: 'white', borderRadius: '12px', padding: '25px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-            <div style={{display:'flex', justifyContent:'space-between', marginBottom: '20px'}}>
-              <h3 style={{ marginTop: 0 }}>Cola de Señales Recientes</h3>
-              <a href="#" style={{color:'#E11D48', fontSize:'14px', textDecoration:'none'}}>Ver historial</a>
-            </div>
-            {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-              <div key={log.id} style={{ padding: '15px 0', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-                  {getEventIcon(log.tipo_evento)}
+          {/* LISTA DE EVENTOS */}
+          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.03)' }}>
+            <h3 style={{ marginBottom: '20px', fontSize: '16px' }}>Señales en Tiempo Real</h3>
+            {filteredLogs.map((log) => (
+              <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: log.tipo_evento?.includes('PÁNICO') ? '#FFF1F2' : '#F3F4F6' }}>
+                    {log.tipo_evento?.includes('PÁNICO') ? <AlertTriangle size={20} color="#E11D48"/> : <ShieldCheck size={20} color="#6B7280"/>}
+                  </div>
                   <div>
-                    <div style={{ fontWeight: 'bold', color: log.tipo_evento?.includes('PÁNICO') ? '#E11D48' : '#111827' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '14px', color:'#374151' }}>{log.nombre_cliente}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{log.nombre_cliente}</div>
+                    <div style={{ fontSize: '12px', color: '#9CA3AF' }}>{log.fecha_evento} • Cuenta: {log.cuenta}</div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                  <div><MapPin size={12} style={{display:'inline'}}/> {log.ciudad} | <Clock size={12} style={{display:'inline'}}/> {log.fecha_evento}</div>
-                  <div style={{marginTop:'2px'}}>Cuenta: {log.cuenta}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: log.tipo_evento?.includes('PÁNICO') ? '#E11D48' : '#374151' }}>{log.tipo_evento}</span>
+                  {/* BOTÓN FALSA ALARMA REINTEGRADO */}
+                  {log.tipo_evento?.includes('PÁNICO') && (
+                    <button 
+                      onClick={() => simulateEvent('FALSA ALARMA (ANULADA)', log.nombre_cliente, log.cuenta)}
+                      style={{ padding: '6px 12px', backgroundColor: '#FFF1F2', border: '1px solid #E11D48', color: '#E11D48', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      Falsa Alarma
+                    </button>
+                  )}
                 </div>
               </div>
-            )) : <p style={{textAlign:'center', color:'#6B7280', padding:'40px'}}>{loading ? 'Cargando...' : 'No hay datos'}</p>}
+            ))}
           </div>
 
-          {/* BOTÓN ARMADO (Grande, visual y central, inspirado en Partición 1) */}
-          <div onClick={() => { setIsArmed(!isArmed); simulateEvent(isArmed ? 'DESARMADO' : 'ARMADO'); }}
-            style={{ flex: 1, backgroundColor: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-            <div style={{ width: '150px', height: '150px', borderRadius: '50%', border: `10px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', backgroundColor: isArmed ? '#ECFDF5' : '#FFF1F2' }}>
-              {isArmed ? <CheckCircle2 size={80} color="#10B981" /> : <XCircle size={80} color="#E11D48" />}
+          {/* WIDGET ARMADO */}
+          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.03)' }}>
+            <div onClick={() => { setIsArmed(!isArmed); simulateEvent(isArmed ? 'DESARMADO' : 'ARMADO'); }}
+              style={{ width: '160px', height: '160px', borderRadius: '50%', border: `10px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 25px', backgroundColor: isArmed ? '#ECFDF5' : '#FFF1F2', cursor: 'pointer' }}>
+              {isArmed ? <CheckCircle2 size={70} color="#10B981" /> : <XCircle size={70} color="#E11D48" />}
             </div>
-            <h2 style={{ color: isArmed ? '#10B981' : '#E11D48', margin: 0, fontSize: '22px' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</h2>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px' }}>Presiona para cambiar estado</p>
+            <h2 style={{ color: isArmed ? '#10B981' : '#E11D48', margin: 0 }}>{isArmed ? 'ARMADO' : 'DESARMADO'}</h2>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '10px' }}>Partición Principal</p>
           </div>
         </div>
       </main>
@@ -114,18 +146,11 @@ export default function Page() {
   );
 }
 
-// COMPONENTES DE ESTILO AUXILIARES
-function SidebarLink({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
-  return (
-    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', backgroundColor: active ? '#FEE2E2' : 'transparent', color: active ? '#E11D48' : '#374151', fontWeight: active ? 'bold' : 'normal' }}>
-      {icon} {label}
-    </div>
-  );
+// CONTROLADOR DE ESTADO
+export default function Page() {
+  const [auth, setAuth] = useState(true);
+  return auth ? <DashboardPage onLogout={() => setAuth(false)} /> : <LoginPage onLogin={() => setAuth(true)} />;
 }
 
-function getEventIcon(tipo: string) {
-  if (tipo?.includes('Alarma') || tipo?.includes('PÁNICO')) return <Bell size={20} color="#E11D48" style={{backgroundColor: '#FFF1F2', padding:'10px', borderRadius:'10px'}} />;
-  if (tipo?.includes('Apertura')) return <Power size={20} color="#10B981" style={{backgroundColor: '#ECFDF5', padding:'10px', borderRadius:'10px'}} />;
-  if (tipo?.includes('Cierre') || tipo?.includes('APP')) return <ShieldCheck size={20} color="#3B82F6" style={{backgroundColor: '#EFF6FF', padding:'10px', borderRadius:'10px'}} />;
-  return <ChevronRight size={20} color="#6B7280" style={{backgroundColor: '#F3F4F6', padding:'10px', borderRadius:'10px'}} />;
-}
+const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #D1D5DB', boxSizing: 'border-box' as const };
+const actionBtn = { display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', color: '#374151', fontSize: '14px' };
