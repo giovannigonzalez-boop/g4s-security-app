@@ -34,15 +34,18 @@ export default function G4SMonitoringDashboard() {
     getLogs();
   }, []);
 
-  const filteredLogs = logs.filter(log => {
-    const s = searchTerm.toLowerCase().trim();
-    if (!s) return true;
-    return (
-      log.cuenta?.toLowerCase().includes(s) ||
-      log.nombre_cliente?.toLowerCase().includes(s) ||
-      log.tipo_evento?.toLowerCase().includes(s)
-    );
-  });
+ // 1. Busca la parte donde se filtran los logs y ponlo así:
+const filteredLogs = logs.filter(log => {
+  const s = searchTerm.toLowerCase().trim();
+  if (!s) return true;
+  
+  // Usamos los nombres exactos de tus 11 columnas
+  const cliente = String(log.nombre_cliente || "").toLowerCase();
+  const n_cuenta = String(log.cuenta || "").toLowerCase();
+  const evento = String(log.tipo_evento || "").toLowerCase();
+
+  return cliente.includes(s) || n_cuenta.includes(s) || evento.includes(s);
+});
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: 'white', padding: '20px', fontFamily: 'sans-serif' }}>
@@ -76,18 +79,20 @@ export default function G4SMonitoringDashboard() {
           <tbody>
             {loading ? (
               <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Cargando datos...</td></tr>
-            ) : filteredLogs.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#f87171' }}>Sin registros para "{searchTerm}"</td></tr>
-            ) : filteredLogs.map((log) => (
-              <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
-                <td style={{ padding: '15px', color: '#f87171' }}>#{log.id}</td>
-                <td style={{ padding: '15px' }}>{log.cuenta}</td>
-                <td style={{ padding: '15px', fontWeight: 'bold' }}>{log.nombre_cliente}</td>
-                <td style={{ padding: '15px' }}>{log.tipo_evento}</td>
-                <td style={{ padding: '15px', color: '#94a3b8', fontSize: '13px' }}>{new Date(log.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
+           // 2. Busca la parte de la tabla (el cuerpo <tbody>) y ponlo así:
+<tbody>
+  {filteredLogs.map((log) => (
+    <tr key={log.id} style={{ borderBottom: '1px solid #334155' }}>
+      <td style={{ padding: '15px', color: '#f87171' }}>#{log.id}</td>
+      <td style={{ padding: '15px' }}>{log.cuenta}</td>
+      <td style={{ padding: '15px', fontWeight: 'bold' }}>{log.nombre_cliente}</td>
+      <td style={{ padding: '15px' }}>{log.tipo_evento}</td>
+      <td style={{ padding: '15px', color: '#94a3b8' }}>
+        {new Date(log.created_at).toLocaleString()}
+      </td>
+    </tr>
+  ))}
+</tbody>
         </table>
       </div>
     </div>
