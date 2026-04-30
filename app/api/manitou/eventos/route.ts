@@ -6,6 +6,7 @@ export async function GET() {
   const password = process.env.BOLD_PASS;
 
   try {
+    // 1. Obtener Token
     const authBody = new URLSearchParams();
     authBody.append('grant_type', 'manitou_contact');
     authBody.append('username', username || '');
@@ -25,11 +26,12 @@ export async function GET() {
 
     if (!token) return NextResponse.json({ success: false, error: "Sin Token" }, { status: 401 });
 
-    // --- CAMBIO AQUÍ: Rango de 7 días para asegurar que traiga datos ---
+    // 2. Rango de tiempo (Últimos 30 días para asegurar datos)
     const hoy = new Date();
-    const hace7Dias = new Date();
-    hace7Dias.setDate(hoy.getDate() - 7);
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hoy.getDate() - 30);
 
+    // 3. Consulta específica para la cuenta BOGCCC0
     const activityRes = await fetch(`${url}/api/Customer/Activity`, {
       method: 'POST',
       headers: {
@@ -37,9 +39,9 @@ export async function GET() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        Top: 100,
-        // Usamos un formato de fecha más simple que Manitou entiende mejor
-        StartTime: hace7Dias.toISOString().split('.')[0], 
+        CustomerId: "BOGCCC0", // <--- Filtro específico
+        Top: 50,
+        StartTime: hace30Dias.toISOString().split('.')[0],
         EndTime: hoy.toISOString().split('.')[0],
         IncludeAudits: true,
         IncludeEvents: true
@@ -48,11 +50,12 @@ export async function GET() {
 
     const eventData = await activityRes.json();
     
-    // Verificamos todas las posibles carpetas donde Manitou guarda los eventos
+    // Extraemos los resultados
     const finalData = eventData.Results || eventData.Data || (Array.isArray(eventData) ? eventData : []);
 
     return NextResponse.json({
       success: true,
+      account: "BOGCCC0",
       data: finalData
     });
 
