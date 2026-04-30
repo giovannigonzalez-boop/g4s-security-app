@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function G4SFinalMasterPanel() {
+export default function G4SUnifiedFinal() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,55 +31,61 @@ export default function G4SFinalMasterPanel() {
     }
   };
 
-  // --- FUNCIÓN DE ACTUALIZACIÓN CORREGIDA ---
   const fetchData = async () => {
     setLoading(true);
-    // Añadimos un pequeño delay para que el usuario perciba la actualización
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    const { data, error } = await supabase
-      .from('alarm_logs')
-      .select('*')
-      .order('id', { ascending: false })
-      .limit(7);
-    
-    if (data && !error) {
-      setLogs(data);
-      // Si hay un evento nuevo, centrar el mapa en él
-      if (data[0]?.latitud) {
-        setCoords({ lat: data[0].latitud, lng: data[0].longitud });
-      }
-    }
-    setLoading(false);
+    const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(7);
+    if (data) setLogs(data);
+    setTimeout(() => setLoading(false), 600);
   };
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
-  const simularPanico = async () => {
-    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901", "BAQ-7722"];
-    const nombres = ["Residencia Premium", "Bodega Central G4S", "Local Comercial 14", "Zona Residencial Norte", "Sede Administrativa"];
-    const index = Math.floor(Math.random() * cuentas.length);
-
-    const lat = 10.93 + (Math.random() * 0.08);
-    const lng = -74.80 + (Math.random() * 0.08);
+  // --- FUNCIÓN PARA REGISTRAR ARMADO/DESARMADO EN DB (NUEVA) ---
+  const toggleArmado = async () => {
+    const nuevoEstado = !isArmed;
+    const evento = nuevoEstado ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO';
     
+    // Simulamos una cuenta para el log
+    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288"];
+    const cuentaAleatoria = cuentas[Math.floor(Math.random() * cuentas.length)];
+
+    setLoading(true);
+    
+    // 1. Insertamos el evento en la base de datos
     const { error } = await supabase.from('alarm_logs').insert([{ 
-      nombre_cliente: nombres[index], 
+      nombre_cliente: "Residencia Controlada", 
+      cuenta: cuentaAleatoria, 
+      tipo_evento: evento, 
+      fecha_evento: new Date().toLocaleTimeString(),
+      latitud: 10.9685,
+      longitud: -74.7813
+    }]);
+
+    if (!error) {
+      setIsArmed(nuevoEstado); // 2. Cambiamos el estado visual
+      fetchData(); // 3. Refrescamos la lista automáticamente
+    }
+  };
+
+  const simularPanico = async () => {
+    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901"];
+    const index = Math.floor(Math.random() * cuentas.length);
+    
+    await supabase.from('alarm_logs').insert([{ 
+      nombre_cliente: "Alerta de Emergencia", 
       cuenta: cuentas[index], 
       tipo_evento: 'PÁNICO', 
       fecha_evento: new Date().toLocaleTimeString(),
-      latitud: lat,
-      longitud: lng
+      latitud: 10.94 + (Math.random() * 0.05),
+      longitud: -74.79 + (Math.random() * 0.05)
     }]);
-
-    if (!error) fetchData();
+    fetchData();
   };
 
   const anularSenal = async () => {
     if (!panicoActivo) return;
-    setLoading(true);
     await supabase.from('alarm_logs').update({ tipo_evento: 'FALSA ALARMA ANULADA' }).eq('id', panicoActivo.id);
-    await fetchData();
+    fetchData();
   };
 
   const G4SLogo = ({ size = "normal" }) => (
@@ -107,11 +113,7 @@ export default function G4SFinalMasterPanel() {
       <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
-        
-        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }} title="Simular Nueva Alerta">
-          <Radio size={28} />
-        </div>
-
+        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }}><Radio size={28} /></div>
         <div style={{ flex: 1 }} />
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
@@ -122,27 +124,10 @@ export default function G4SFinalMasterPanel() {
           <div style={{ backgroundColor: 'white', borderRadius: '28px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Historial en Tiempo Real</h3>
-              
-              {/* BOTÓN REFRESH CORREGIDO */}
-              <button 
-                onClick={fetchData} 
-                disabled={loading}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <RefreshCw 
-                  size={24} 
-                  color="#E11D48" 
-                  style={{ 
-                    transition: 'transform 0.5s ease',
-                    transform: loading ? 'rotate(360deg)' : 'rotate(0deg)',
-                  }}
-                  className={loading ? 'animate-spin' : ''}
-                />
-              </button>
+              <div onClick={fetchData} style={{ cursor: 'pointer' }}><RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} /></div>
             </div>
-            
             {logs.map((log) => (
-              <div key={log.id} onClick={() => log.latitud && setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
+              <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9' }}>
                 <div style={{ display: 'flex', gap: '18px' }}>
                   <div style={{ backgroundColor: log.tipo_evento?.includes('PÁNICO') ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
                     {log.tipo_evento?.includes('PÁNICO') ? <AlertTriangle size={22} color="#E11D48" /> : <ShieldCheck size={22} color="#10B981" />}
@@ -159,20 +144,20 @@ export default function G4SFinalMasterPanel() {
         </section>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          {/* BOTÓN DE ARMADO ACTUALIZADO CON DB */}
           <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div onClick={() => setIsArmed(!isArmed)} style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
+            <div onClick={toggleArmado} style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
               {isArmed ? <CheckCircle2 size={55} color="#10B981" /> : <XCircle size={55} color="#E11D48" />}
             </div>
-            <strong style={{ fontSize: '16px', color: isArmed ? '#10B981' : '#E11D48' }}>SISTEMA ARMADO</strong>
+            <strong style={{ fontSize: '16px', color: isArmed ? '#10B981' : '#E11D48' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</strong>
           </div>
 
           {panicoActivo ? (
             <div style={{ backgroundColor: '#FFF1F2', padding: '35px', borderRadius: '32px', textAlign: 'center', border: '2px solid #E11D48', animation: 'pulse 2s infinite' }}>
-              <div onClick={anularSenal} style={{ width: '110px', height: '110px', borderRadius: '50%', backgroundColor: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer', boxShadow: '0 12px 24px rgba(225, 29, 72, 0.4)' }}>
+              <div onClick={anularSenal} style={{ width: '110px', height: '110px', borderRadius: '50%', backgroundColor: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer' }}>
                 <ShieldAlert size={50} color="white" />
               </div>
               <strong style={{ fontSize: '15px', color: '#E11D48' }}>ANULAR ALERTA PÁNICO</strong>
-              <p style={{ fontSize: '11px', color: '#E11D48', marginTop: '5px' }}>Cuenta: {panicoActivo.cuenta}</p>
             </div>
           ) : (
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '32px', textAlign: 'center', opacity: 0.6, border: '2px dashed #E2E8F0' }}>
@@ -188,8 +173,8 @@ export default function G4SFinalMasterPanel() {
               <MapPin size={20} color="#E11D48" />
               <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
             </div>
-            <div onClick={() => window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%', display: 'block' }} alt="Ubicación señal" />
+            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} />
             </div>
           </div>
         </aside>
@@ -197,17 +182,12 @@ export default function G4SFinalMasterPanel() {
 
       <style jsx>{`
         @keyframes pulse {
-          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
-          70% { transform: scale(1.04); box-shadow: 0 0 0 20px rgba(225, 29, 72, 0); }
-          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+          0% { transform: scale(1); }
+          70% { transform: scale(1.04); }
+          100% { transform: scale(1); }
         }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
