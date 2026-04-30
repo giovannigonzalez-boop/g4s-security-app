@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function G4SUnifiedFinal() {
+export default function G4SUnifiedFinalV2() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,36 +34,43 @@ export default function G4SUnifiedFinal() {
   const fetchData = async () => {
     setLoading(true);
     const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(7);
-    if (data) setLogs(data);
+    if (data && data.length > 0) {
+      setLogs(data);
+      // Sincronizar el mapa con el último evento recibido
+      if (data[0].latitud && data[0].longitud) {
+        setCoords({ lat: data[0].latitud, lng: data[0].longitud });
+      }
+    }
     setTimeout(() => setLoading(false), 600);
   };
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
-  // --- FUNCIÓN PARA REGISTRAR ARMADO/DESARMADO EN DB (NUEVA) ---
+  // --- REGISTRO DE ARMADO/DESARMADO CON GPS ---
   const toggleArmado = async () => {
     const nuevoEstado = !isArmed;
     const evento = nuevoEstado ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO';
     
-    // Simulamos una cuenta para el log
     const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288"];
     const cuentaAleatoria = cuentas[Math.floor(Math.random() * cuentas.length)];
 
+    // Coordenadas base de Barranquilla para estos eventos
+    const latBase = 10.9685;
+    const lngBase = -74.7813;
+
     setLoading(true);
-    
-    // 1. Insertamos el evento en la base de datos
     const { error } = await supabase.from('alarm_logs').insert([{ 
       nombre_cliente: "Residencia Controlada", 
       cuenta: cuentaAleatoria, 
       tipo_evento: evento, 
       fecha_evento: new Date().toLocaleTimeString(),
-      latitud: 10.9685,
-      longitud: -74.7813
+      latitud: latBase,
+      longitud: lngBase
     }]);
 
     if (!error) {
-      setIsArmed(nuevoEstado); // 2. Cambiamos el estado visual
-      fetchData(); // 3. Refrescamos la lista automáticamente
+      setIsArmed(nuevoEstado);
+      fetchData();
     }
   };
 
@@ -71,13 +78,17 @@ export default function G4SUnifiedFinal() {
     const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901"];
     const index = Math.floor(Math.random() * cuentas.length);
     
+    // Ubicación aleatoria para el pánico
+    const lat = 10.94 + (Math.random() * 0.05);
+    const lng = -74.79 + (Math.random() * 0.05);
+    
     await supabase.from('alarm_logs').insert([{ 
       nombre_cliente: "Alerta de Emergencia", 
       cuenta: cuentas[index], 
       tipo_evento: 'PÁNICO', 
       fecha_evento: new Date().toLocaleTimeString(),
-      latitud: 10.94 + (Math.random() * 0.05),
-      longitud: -74.79 + (Math.random() * 0.05)
+      latitud: lat,
+      longitud: lng
     }]);
     fetchData();
   };
@@ -86,6 +97,10 @@ export default function G4SUnifiedFinal() {
     if (!panicoActivo) return;
     await supabase.from('alarm_logs').update({ tipo_evento: 'FALSA ALARMA ANULADA' }).eq('id', panicoActivo.id);
     fetchData();
+  };
+
+  const openGoogleMaps = () => {
+    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank');
   };
 
   const G4SLogo = ({ size = "normal" }) => (
@@ -113,7 +128,7 @@ export default function G4SUnifiedFinal() {
       <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
-        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }}><Radio size={28} /></div>
+        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }} title="Simular Pánico"><Radio size={28} /></div>
         <div style={{ flex: 1 }} />
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
@@ -121,13 +136,13 @@ export default function G4SUnifiedFinal() {
       <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
         <section>
           <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
-          <div style={{ backgroundColor: 'white', borderRadius: '28px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Historial en Tiempo Real</h3>
               <div onClick={fetchData} style={{ cursor: 'pointer' }}><RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} /></div>
             </div>
             {logs.map((log) => (
-              <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9' }}>
+              <div key={log.id} onClick={() => { if(log.latitud) setCoords({lat: log.latitud, lng: log.longitud}) }} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', gap: '18px' }}>
                   <div style={{ backgroundColor: log.tipo_evento?.includes('PÁNICO') ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
                     {log.tipo_evento?.includes('PÁNICO') ? <AlertTriangle size={22} color="#E11D48" /> : <ShieldCheck size={22} color="#10B981" />}
@@ -144,7 +159,6 @@ export default function G4SUnifiedFinal() {
         </section>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          {/* BOTÓN DE ARMADO ACTUALIZADO CON DB */}
           <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
             <div onClick={toggleArmado} style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
               {isArmed ? <CheckCircle2 size={55} color="#10B981" /> : <XCircle size={55} color="#E11D48" />}
@@ -173,19 +187,17 @@ export default function G4SUnifiedFinal() {
               <MapPin size={20} color="#E11D48" />
               <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
             </div>
-            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} />
+            {/* MAPA DINÁMICO REPARADO */}
+            <div onClick={openGoogleMaps} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Ubicación señal" />
             </div>
+            <p style={{fontSize: '10px', color: '#94A3B8', textAlign: 'center', marginTop: '10px'}}>Clic en el mapa para ver en Google Maps</p>
           </div>
         </aside>
       </main>
 
       <style jsx>{`
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          70% { transform: scale(1.04); }
-          100% { transform: scale(1); }
-        }
+        @keyframes pulse { 0% { transform: scale(1); } 70% { transform: scale(1.04); } 100% { transform: scale(1); } }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
