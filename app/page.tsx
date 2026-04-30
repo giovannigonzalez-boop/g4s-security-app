@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function G4SFinalDemo() {
+export default function G4SFinalMasterPanel() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +20,6 @@ export default function G4SFinalDemo() {
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
-  // Detectar pánico activo
   const panicoActivo = logs.find(log => log.tipo_evento === 'PÁNICO');
 
   const handleLogin = (e: React.FormEvent) => {
@@ -32,23 +31,42 @@ export default function G4SFinalDemo() {
     }
   };
 
+  // --- FUNCIÓN DE ACTUALIZACIÓN REAL ---
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(7);
-    if (data) setLogs(data);
-    setLoading(false);
+    // Traemos los últimos 7 eventos de CUALQUIER cuenta en la base de datos
+    const { data } = await supabase
+      .from('alarm_logs')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(7);
+    
+    if (data) {
+      setLogs(data);
+      // Actualizamos el mapa automáticamente con la ubicación del evento más reciente
+      if (data[0]?.latitud) {
+        setCoords({ lat: data[0].latitud, lng: data[0].longitud });
+      }
+    }
+    
+    // Pequeño delay para que se vea el efecto visual de carga
+    setTimeout(() => setLoading(false), 800);
   };
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
-  // --- FUNCIÓN PARA SIMULAR PÁNICO (NUEVA) ---
   const simularPanico = async () => {
-    const lat = 10.96 + (Math.random() * 0.02);
-    const lng = -74.78 + (Math.random() * 0.02);
+    // Generamos una cuenta aleatoria para la simulación
+    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901"];
+    const nombres = ["Residencia Premium", "Bodega G4S", "Local Comercial", "Zona Residencial"];
+    const index = Math.floor(Math.random() * cuentas.length);
+
+    const lat = 10.94 + (Math.random() * 0.06);
+    const lng = -74.79 + (Math.random() * 0.06);
     
     await supabase.from('alarm_logs').insert([{ 
-      nombre_cliente: "Residencia Test", 
-      cuenta: "BAQ-3733", 
+      nombre_cliente: nombres[index], 
+      cuenta: cuentas[index], 
       tipo_evento: 'PÁNICO', 
       fecha_evento: new Date().toLocaleTimeString(),
       latitud: lat,
@@ -89,8 +107,7 @@ export default function G4SFinalDemo() {
         <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
         
-        {/* BOTÓN SECRETO PARA SIMULAR PÁNICO */}
-        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }} title="Simular Señal de Pánico">
+        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }} title="Simular Nueva Alerta">
           <Radio size={28} />
         </div>
 
@@ -102,9 +119,15 @@ export default function G4SFinalDemo() {
         <section>
           <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
           <div style={{ backgroundColor: 'white', borderRadius: '28px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Historial en Tiempo Real</h3>
-              <RefreshCw size={20} color="#94A3B8" onClick={fetchData} className={loading ? 'animate-spin' : ''} style={{ cursor: 'pointer' }} />
+              {/* BOTÓN ACTUALIZADO: AHORA FUNCIONA */}
+              <div 
+                onClick={fetchData} 
+                style={{ cursor: 'pointer', padding: '8px', borderRadius: '50%', backgroundColor: loading ? '#F1F5F9' : 'transparent', transition: '0.3s' }}
+              >
+                <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
+              </div>
             </div>
             {logs.map((log) => (
               <div key={log.id} onClick={() => log.latitud && setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
@@ -128,7 +151,7 @@ export default function G4SFinalDemo() {
             <div onClick={() => setIsArmed(!isArmed)} style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
               {isArmed ? <CheckCircle2 size={55} color="#10B981" /> : <XCircle size={55} color="#E11D48" />}
             </div>
-            <strong style={{ fontSize: '16px', color: isArmed ? '#10B981' : '#E11D48' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</strong>
+            <strong style={{ fontSize: '16px', color: isArmed ? '#10B981' : '#E11D48' }}>SISTEMA ARMADO</strong>
           </div>
 
           {panicoActivo ? (
@@ -137,13 +160,14 @@ export default function G4SFinalDemo() {
                 <ShieldAlert size={50} color="white" />
               </div>
               <strong style={{ fontSize: '15px', color: '#E11D48' }}>ANULAR ALERTA PÁNICO</strong>
+              <p style={{ fontSize: '11px', color: '#E11D48', marginTop: '5px' }}>Cuenta: {panicoActivo.cuenta}</p>
             </div>
           ) : (
-            <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center', opacity: 0.6, border: '2px dashed #E2E8F0' }}>
-              <div style={{ width: '110px', height: '110px', borderRadius: '50%', border: '4px solid #94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
-                <ShieldCheck size={50} color="#94A3B8" />
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '32px', textAlign: 'center', opacity: 0.6, border: '2px dashed #E2E8F0' }}>
+              <div style={{ width: '100px', height: '100px', borderRadius: '50%', border: '4px solid #94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
+                <ShieldCheck size={45} color="#94A3B8" />
               </div>
-              <strong style={{ fontSize: '15px', color: '#94A3B8' }}>SIN ALERTAS ACTIVAS</strong>
+              <strong style={{ fontSize: '14px', color: '#94A3B8' }}>SIN ALERTAS ACTIVAS</strong>
             </div>
           )}
 
@@ -152,8 +176,8 @@ export default function G4SFinalDemo() {
               <MapPin size={20} color="#E11D48" />
               <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
             </div>
-            <div onClick={() => window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%', display: 'block' }} />
+            <div onClick={() => window.open(`https://www.google.com/maps?q=$${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%', display: 'block' }} alt="Ubicación señal" />
             </div>
           </div>
         </aside>
