@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Home, ShieldCheck, RefreshCw, CheckCircle2, XCircle, 
-  LogOut, AlertTriangle, MapPin, Lock, User, ShieldAlert
+  LogOut, AlertTriangle, MapPin, Lock, User, ShieldAlert 
 } from 'lucide-react';
 
 const supabase = createClient(
@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export default function G4SUnifiedPremium() {
+export default function G4SUnifiedPremiumV2() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +20,6 @@ export default function G4SUnifiedPremium() {
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
-  // Identificar si hay algún pánico activo en la lista actual
   const panicoActivo = logs.find(log => log.tipo_evento === 'PÁNICO');
 
   const handleLogin = (e: React.FormEvent) => {
@@ -51,15 +50,14 @@ export default function G4SUnifiedPremium() {
     if (!error) fetchData();
   };
 
-  const openGoogleMaps = () => {
-    window.open(`https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`, '_blank');
-  };
-
   if (!session) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
         <form onSubmit={handleLogin} style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '28px', width: '360px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-          <div style={{ backgroundColor: '#E11D48', color: 'white', width: '64px', height: '64px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', margin: '0 auto 24px' }}>G4S</div>
+          <div style={{ backgroundColor: '#E11D48', color: 'white', width: '100px', height: '64px', borderRadius: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 8px 15px rgba(225,29,72,0.3)' }}>
+            <span style={{ fontSize: '24px', fontWeight: '900', lineHeight: 1 }}>G4S</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '2px' }}>ARC</span>
+          </div>
           <h2 style={{ color: '#1E293B', marginBottom: '8px' }}>Security Console</h2>
           <input type="text" placeholder="Usuario" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '16px', boxSizing: 'border-box' }} />
           <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px', boxSizing: 'border-box' }} />
@@ -71,20 +69,26 @@ export default function G4SUnifiedPremium() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      <aside style={{ width: '80px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
-        <div style={{ color: '#E11D48', fontWeight: 'bold', fontSize: '20px', marginBottom: '40px' }}>G4S</div>
+      {/* SIDEBAR CON MARCA COMPLETA */}
+      <aside style={{ width: '90px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px' }}>
+          <div style={{ backgroundColor: '#E11D48', color: 'white', padding: '8px', borderRadius: '8px', fontWeight: '900', fontSize: '14px', textAlign: 'center' }}>
+            G4S<br/><span style={{ fontSize: '9px', letterSpacing: '1px' }}>ARC</span>
+          </div>
+        </div>
         <Home size={24} color="#E11D48" />
         <div style={{ flex: 1 }} />
         <LogOut size={24} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
 
-      <main style={{ flex: 1, marginLeft: '80px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' }}>
+      <main style={{ flex: 1, marginLeft: '90px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' }}>
         <section>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A', marginBottom: '32px' }}>Centro de Operaciones ARC</h1>
+          {/* TÍTULO ACTUALIZADO A LOG DE ACTIVACIONES */}
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
           
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '30px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h3 style={{ margin: 0 }}>Señales Entrantes</h3>
+              <h3 style={{ margin: 0 }}>Historial Reciente</h3>
               <RefreshCw size={18} color="#94A3B8" onClick={fetchData} className={loading ? 'animate-spin' : ''} style={{ cursor: 'pointer' }} />
             </div>
             {logs.map((log) => (
@@ -105,22 +109,20 @@ export default function G4SUnifiedPremium() {
         </section>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* BOTÓN 1: ESTADO ARMADO */}
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '28px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div onClick={() => setIsArmed(!isArmed)} style={{ width: '100px', height: '100px', borderRadius: '50%', border: `4px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
               {isArmed ? <CheckCircle2 size={45} color="#10B981" /> : <XCircle size={45} color="#E11D48" />}
             </div>
-            <strong style={{ fontSize: '14px', color: isArmed ? '#10B981' : '#E11D48' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</strong>
+            <strong style={{ fontSize: '14px', color: isArmed ? '#10B981' : '#E11D48' }}>{isArmed ? 'SISTEMA PROTEGIDO' : 'SISTEMA DESARMADO'}</strong>
           </div>
 
-          {/* BOTÓN 2: CONTROL DE PÁNICO DINÁMICO */}
           {panicoActivo ? (
             <div style={{ backgroundColor: '#FFF1F2', padding: '30px', borderRadius: '28px', textAlign: 'center', border: '2px solid #E11D48', animation: 'pulse 2s infinite' }}>
-              <div onClick={anularSenal} style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer', boxShadow: '0 0 20px rgba(225, 29, 72, 0.4)' }}>
+              <div onClick={anularSenal} style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer', boxShadow: '0 10px 20px rgba(225, 29, 72, 0.4)' }}>
                 <ShieldAlert size={45} color="white" />
               </div>
-              <strong style={{ fontSize: '14px', color: '#E11D48' }}>ANULAR PÁNICO ACTUAL</strong>
-              <p style={{ fontSize: '11px', color: '#E11D48', margin: '5px 0 0' }}>Señal detectada: {panicoActivo.fecha_evento}</p>
+              <strong style={{ fontSize: '14px', color: '#E11D48' }}>ANULAR ALERTA PÁNICO</strong>
+              <p style={{ fontSize: '11px', color: '#E11D48', margin: '5px 0 0' }}>CTA: {panicoActivo.cuenta}</p>
             </div>
           ) : (
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '28px', textAlign: 'center', opacity: 0.5, border: '1px dashed #E2E8F0' }}>
@@ -131,13 +133,12 @@ export default function G4SUnifiedPremium() {
             </div>
           )}
 
-          {/* MAPA */}
           <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <MapPin size={18} color="#E11D48" />
               <span style={{ fontWeight: 'bold', fontSize: '13px' }}>Ubicación Google Maps</span>
             </div>
-            <div onClick={openGoogleMaps} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
+            <div onClick={() => window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
               <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=350,200&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
             </div>
           </div>
@@ -146,9 +147,9 @@ export default function G4SUnifiedPremium() {
 
       <style jsx>{`
         @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.02); }
-          100% { transform: scale(1); }
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
+          70% { transform: scale(1.03); box-shadow: 0 0 0 15px rgba(225, 29, 72, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
         }
       `}</style>
     </div>
