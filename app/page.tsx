@@ -31,40 +31,39 @@ export default function G4SFinalMasterPanel() {
     }
   };
 
-  // --- FUNCIÓN DE ACTUALIZACIÓN REAL ---
+  // --- FUNCIÓN DE ACTUALIZACIÓN CORREGIDA ---
   const fetchData = async () => {
     setLoading(true);
-    // Traemos los últimos 7 eventos de CUALQUIER cuenta en la base de datos
-    const { data } = await supabase
+    // Añadimos un pequeño delay para que el usuario perciba la actualización
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const { data, error } = await supabase
       .from('alarm_logs')
       .select('*')
       .order('id', { ascending: false })
       .limit(7);
     
-    if (data) {
+    if (data && !error) {
       setLogs(data);
-      // Actualizamos el mapa automáticamente con la ubicación del evento más reciente
+      // Si hay un evento nuevo, centrar el mapa en él
       if (data[0]?.latitud) {
         setCoords({ lat: data[0].latitud, lng: data[0].longitud });
       }
     }
-    
-    // Pequeño delay para que se vea el efecto visual de carga
-    setTimeout(() => setLoading(false), 800);
+    setLoading(false);
   };
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
   const simularPanico = async () => {
-    // Generamos una cuenta aleatoria para la simulación
-    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901"];
-    const nombres = ["Residencia Premium", "Bodega G4S", "Local Comercial", "Zona Residencial"];
+    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901", "BAQ-7722"];
+    const nombres = ["Residencia Premium", "Bodega Central G4S", "Local Comercial 14", "Zona Residencial Norte", "Sede Administrativa"];
     const index = Math.floor(Math.random() * cuentas.length);
 
-    const lat = 10.94 + (Math.random() * 0.06);
-    const lng = -74.79 + (Math.random() * 0.06);
+    const lat = 10.93 + (Math.random() * 0.08);
+    const lng = -74.80 + (Math.random() * 0.08);
     
-    await supabase.from('alarm_logs').insert([{ 
+    const { error } = await supabase.from('alarm_logs').insert([{ 
       nombre_cliente: nombres[index], 
       cuenta: cuentas[index], 
       tipo_evento: 'PÁNICO', 
@@ -72,13 +71,15 @@ export default function G4SFinalMasterPanel() {
       latitud: lat,
       longitud: lng
     }]);
-    fetchData();
+
+    if (!error) fetchData();
   };
 
   const anularSenal = async () => {
     if (!panicoActivo) return;
+    setLoading(true);
     await supabase.from('alarm_logs').update({ tipo_evento: 'FALSA ALARMA ANULADA' }).eq('id', panicoActivo.id);
-    fetchData();
+    await fetchData();
   };
 
   const G4SLogo = ({ size = "normal" }) => (
@@ -121,14 +122,25 @@ export default function G4SFinalMasterPanel() {
           <div style={{ backgroundColor: 'white', borderRadius: '28px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Historial en Tiempo Real</h3>
-              {/* BOTÓN ACTUALIZADO: AHORA FUNCIONA */}
-              <div 
+              
+              {/* BOTÓN REFRESH CORREGIDO */}
+              <button 
                 onClick={fetchData} 
-                style={{ cursor: 'pointer', padding: '8px', borderRadius: '50%', backgroundColor: loading ? '#F1F5F9' : 'transparent', transition: '0.3s' }}
+                disabled={loading}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
-              </div>
+                <RefreshCw 
+                  size={24} 
+                  color="#E11D48" 
+                  style={{ 
+                    transition: 'transform 0.5s ease',
+                    transform: loading ? 'rotate(360deg)' : 'rotate(0deg)',
+                  }}
+                  className={loading ? 'animate-spin' : ''}
+                />
+              </button>
             </div>
+            
             {logs.map((log) => (
               <div key={log.id} onClick={() => log.latitud && setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', gap: '18px' }}>
@@ -176,7 +188,7 @@ export default function G4SFinalMasterPanel() {
               <MapPin size={20} color="#E11D48" />
               <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
             </div>
-            <div onClick={() => window.open(`https://www.google.com/maps?q=$${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
+            <div onClick={() => window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
               <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%', display: 'block' }} alt="Ubicación señal" />
             </div>
           </div>
@@ -188,6 +200,13 @@ export default function G4SFinalMasterPanel() {
           0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
           70% { transform: scale(1.04); box-shadow: 0 0 0 20px rgba(225, 29, 72, 0); }
           100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
