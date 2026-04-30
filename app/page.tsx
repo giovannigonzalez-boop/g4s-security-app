@@ -1,206 +1,33 @@
-"use client";
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { 
-  Home, ShieldCheck, RefreshCw, CheckCircle2, XCircle, 
-  LogOut, AlertTriangle, MapPin, Lock, User, ShieldAlert, Radio
-} from 'lucide-react';
+const fetchData = async () => {
+  setLoading(true);
+  try {
+    // 1. Llamamos a nuestro nuevo túnel de eventos
+    const response = await fetch('/api/manitou/eventos');
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      // 2. Mapeamos los datos de Manitou al formato de tu interfaz
+      // Ajustamos los nombres de los campos según la respuesta real de Bold
+      const mappedLogs = result.data.map((item: any) => ({
+        id: item.Id || Math.random(),
+        nombre_cliente: item.CustomerName || "Cliente Manitou",
+        cuenta: item.CustomerId || "N/A",
+        tipo_evento: item.EventDescription || "Evento de Seguridad",
+        fecha_evento: new Date(item.Time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        // Si Manitou no trae coordenadas, usamos las de Barranquilla por defecto
+        latitud: item.Latitude || 10.9685,
+        longitud: item.Longitude || -74.7813
+      }));
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+      setLogs(mappedLogs);
 
-export default function G4SUnifiedFinalV2() {
-  const [session, setSession] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [logs, setLogs] = useState<any[]>([]);
-  const [isArmed, setIsArmed] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
-
-  const panicoActivo = logs.find(log => log.tipo_evento === 'PÁNICO');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
-      setSession(true);
-    } else {
-      alert('Credenciales incorrectas.');
-    }
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    const { data } = await supabase.from('alarm_logs').select('*').order('id', { ascending: false }).limit(7);
-    if (data && data.length > 0) {
-      setLogs(data);
-      // Sincronizar el mapa con el último evento recibido
-      if (data[0].latitud && data[0].longitud) {
-        setCoords({ lat: data[0].latitud, lng: data[0].longitud });
+      // 3. Actualizamos el mapa con la ubicación del evento más reciente
+      if (mappedLogs.length > 0) {
+        setCoords({ lat: mappedLogs[0].latitud, lng: mappedLogs[0].longitud });
       }
     }
-    setTimeout(() => setLoading(false), 600);
-  };
-
-  useEffect(() => { if (session) fetchData(); }, [session]);
-
-  // --- REGISTRO DE ARMADO/DESARMADO CON GPS ---
-  const toggleArmado = async () => {
-    const nuevoEstado = !isArmed;
-    const evento = nuevoEstado ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO';
-    
-    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288"];
-    const cuentaAleatoria = cuentas[Math.floor(Math.random() * cuentas.length)];
-
-    // Coordenadas base de Barranquilla para estos eventos
-    const latBase = 10.9685;
-    const lngBase = -74.7813;
-
-    setLoading(true);
-    const { error } = await supabase.from('alarm_logs').insert([{ 
-      nombre_cliente: "Residencia Controlada", 
-      cuenta: cuentaAleatoria, 
-      tipo_evento: evento, 
-      fecha_evento: new Date().toLocaleTimeString(),
-      latitud: latBase,
-      longitud: lngBase
-    }]);
-
-    if (!error) {
-      setIsArmed(nuevoEstado);
-      fetchData();
-    }
-  };
-
-  const simularPanico = async () => {
-    const cuentas = ["BAQ-3733", "BAQ-4500", "BAQ-1288", "BAQ-9901"];
-    const index = Math.floor(Math.random() * cuentas.length);
-    
-    // Ubicación aleatoria para el pánico
-    const lat = 10.94 + (Math.random() * 0.05);
-    const lng = -74.79 + (Math.random() * 0.05);
-    
-    await supabase.from('alarm_logs').insert([{ 
-      nombre_cliente: "Alerta de Emergencia", 
-      cuenta: cuentas[index], 
-      tipo_evento: 'PÁNICO', 
-      fecha_evento: new Date().toLocaleTimeString(),
-      latitud: lat,
-      longitud: lng
-    }]);
-    fetchData();
-  };
-
-  const anularSenal = async () => {
-    if (!panicoActivo) return;
-    await supabase.from('alarm_logs').update({ tipo_evento: 'FALSA ALARMA ANULADA' }).eq('id', panicoActivo.id);
-    fetchData();
-  };
-
-  const openGoogleMaps = () => {
-    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank');
-  };
-
-  const G4SLogo = ({ size = "normal" }) => (
-    <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px 25px' : '10px 15px', borderRadius: '8px', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)', minWidth: size === "large" ? '120px' : '70px' }}>
-      <span style={{ fontSize: size === "large" ? '32px' : '20px', fontWeight: '900', lineHeight: 0.9 }}>G4S</span>
-      <span style={{ fontSize: size === "large" ? '14px' : '10px', fontWeight: 'bold', letterSpacing: '3px', marginTop: '2px', borderTop: '1px solid rgba(255,255,255,0.3)', width: '100%', textAlign: 'center' }}>ARC</span>
-    </div>
-  );
-
-  if (!session) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
-        <form onSubmit={handleLogin} style={{ backgroundColor: '#FFFFFF', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '30px' }}><G4SLogo size="large" /></div>
-          <input type="text" placeholder="Usuario" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '16px', boxSizing: 'border-box' }} />
-          <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px', boxSizing: 'border-box' }} />
-          <button type="submit" style={{ width: '100%', padding: '16px', backgroundColor: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>INGRESAR</button>
-        </form>
-      </div>
-    );
+  } catch (err) {
+    console.error("Error conectando con el túnel de Manitou:", err);
   }
-
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
-        <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
-        <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
-        <div onClick={simularPanico} style={{ cursor: 'pointer', padding: '12px', borderRadius: '15px', color: '#94A3B8' }} title="Simular Pánico"><Radio size={28} /></div>
-        <div style={{ flex: 1 }} />
-        <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
-      </aside>
-
-      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
-        <section>
-          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
-          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Historial en Tiempo Real</h3>
-              <div onClick={fetchData} style={{ cursor: 'pointer' }}><RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} /></div>
-            </div>
-            {logs.map((log) => (
-              <div key={log.id} onClick={() => { if(log.latitud) setCoords({lat: log.latitud, lng: log.longitud}) }} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', gap: '18px' }}>
-                  <div style={{ backgroundColor: log.tipo_evento?.includes('PÁNICO') ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
-                    {log.tipo_evento?.includes('PÁNICO') ? <AlertTriangle size={22} color="#E11D48" /> : <ShieldCheck size={22} color="#10B981" />}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '800', fontSize: '15px' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '13px', color: '#64748B' }}>{log.fecha_evento} • CTA: {log.cuenta}</div>
-                  </div>
-                </div>
-                <div style={{ fontSize: '12px', color: log.tipo_evento?.includes('ANULADA') ? '#94A3B8' : '#10B981', fontWeight: '900' }}>{log.tipo_evento?.includes('ANULADA') ? 'ARCHIVADO' : 'RECIBIDO'}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div onClick={toggleArmado} style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${isArmed ? '#10B981' : '#E11D48'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', cursor: 'pointer', backgroundColor: isArmed ? '#F0FDF4' : '#FEF2F2' }}>
-              {isArmed ? <CheckCircle2 size={55} color="#10B981" /> : <XCircle size={55} color="#E11D48" />}
-            </div>
-            <strong style={{ fontSize: '16px', color: isArmed ? '#10B981' : '#E11D48' }}>{isArmed ? 'SISTEMA ARMADO' : 'SISTEMA DESARMADO'}</strong>
-          </div>
-
-          {panicoActivo ? (
-            <div style={{ backgroundColor: '#FFF1F2', padding: '35px', borderRadius: '32px', textAlign: 'center', border: '2px solid #E11D48', animation: 'pulse 2s infinite' }}>
-              <div onClick={anularSenal} style={{ width: '110px', height: '110px', borderRadius: '50%', backgroundColor: '#E11D48', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', cursor: 'pointer' }}>
-                <ShieldAlert size={50} color="white" />
-              </div>
-              <strong style={{ fontSize: '15px', color: '#E11D48' }}>ANULAR ALERTA PÁNICO</strong>
-            </div>
-          ) : (
-            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '32px', textAlign: 'center', opacity: 0.6, border: '2px dashed #E2E8F0' }}>
-              <div style={{ width: '100px', height: '100px', borderRadius: '50%', border: '4px solid #94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
-                <ShieldCheck size={45} color="#94A3B8" />
-              </div>
-              <strong style={{ fontSize: '14px', color: '#94A3B8' }}>SIN ALERTAS ACTIVAS</strong>
-            </div>
-          )}
-
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <MapPin size={20} color="#E11D48" />
-              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
-            </div>
-            {/* MAPA DINÁMICO REPARADO */}
-            <div onClick={openGoogleMaps} style={{ borderRadius: '20px', overflow: 'hidden', cursor: 'pointer' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Ubicación señal" />
-            </div>
-            <p style={{fontSize: '10px', color: '#94A3B8', textAlign: 'center', marginTop: '10px'}}>Clic en el mapa para ver en Google Maps</p>
-          </div>
-        </aside>
-      </main>
-
-      <style jsx>{`
-        @keyframes pulse { 0% { transform: scale(1); } 70% { transform: scale(1.04); } 100% { transform: scale(1); } }
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
-}
+  setLoading(false);
+};
