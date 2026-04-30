@@ -1,10 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  Home, ShieldCheck, RefreshCw, CheckCircle2, XCircle, 
-  LogOut, AlertTriangle, MapPin, Lock, User 
-} from 'lucide-react';
+import { Home, ShieldCheck, RefreshCw, CheckCircle2, XCircle, LogOut, AlertTriangle, MapPin, Lock, User } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -21,8 +18,8 @@ export default function G4SPremiumPanel() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validación de credenciales corporativas
-    if (username.toLowerCase() === 'admin' && password === 'G4S2024') {
+    // CLAVE ACTUALIZADA A TU PETICIÓN: G4S2026*
+    if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
       setSession(true);
     } else {
       alert('Credenciales incorrectas. Verifique usuario y contraseña.');
@@ -36,11 +33,6 @@ export default function G4SPremiumPanel() {
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
-  const openGoogleMaps = () => {
-    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank');
-  };
-
-  // --- VISTA DE LOGIN CORPORATIVO (Punto 1: Entorno Bonito) ---
   if (!session) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
@@ -59,14 +51,13 @@ export default function G4SPremiumPanel() {
             <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 48px', borderRadius: '12px', border: '1px solid #E2E8F0', outline: 'none', boxSizing: 'border-box', fontSize: '14px' }} />
           </div>
 
-          <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', transition: 'background 0.2s' }}>Ingresar al Sistema</button>
+          <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}>Ingresar al Sistema</button>
           <p style={{ marginTop: '24px', fontSize: '11px', color: '#94A3B8' }}>© 2024 G4S ARC Security. SOC Operations.</p>
         </form>
       </div>
     );
   }
 
-  // --- VISTA PANEL PRINCIPAL ---
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
       <aside style={{ width: '80px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
@@ -89,7 +80,7 @@ export default function G4SPremiumPanel() {
               <RefreshCw size={18} color="#94A3B8" onClick={fetchData} style={{ cursor: 'pointer' }} />
             </div>
             {logs.map((log) => (
-              <div key={log.id} onClick={() => log.latitud && setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', borderRadius: '12px', transition: 'background 0.2s' }}>
+              <div key={log.id} onClick={() => log.latitud && setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ backgroundColor: log.tipo_evento?.includes('PÁNICO') ? '#FFF1F2' : '#F0FDF4', padding: '10px', borderRadius: '10px' }}>
                     {log.tipo_evento?.includes('PÁNICO') ? <AlertTriangle size={20} color="#E11D48" /> : <ShieldCheck size={20} color="#10B981" />}
@@ -99,7 +90,7 @@ export default function G4SPremiumPanel() {
                     <div style={{ fontSize: '12px', color: '#94A3B8' }}>{log.fecha_evento} • CTA: {log.cuenta}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#10B981' }}>PROCESADO</div>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#10B981' }}>RECIBIDO</div>
               </div>
             ))}
           </div>
@@ -116,11 +107,10 @@ export default function G4SPremiumPanel() {
           <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <MapPin size={18} color="#E11D48" />
-              <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#1E293B' }}>Localización de la Señal</span>
+              <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#1E293B' }}>Ubicación (Clic para Google Maps)</span>
             </div>
-            <div onClick={openGoogleMaps} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=350,240&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%', display: 'block' }} alt="Mapa" />
-              <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>VER EN GOOGLE MAPS</div>
+            <div onClick={() => window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank')} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=350,240&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
             </div>
           </div>
         </aside>
