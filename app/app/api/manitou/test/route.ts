@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // 1. Extraemos las credenciales desde las variables de entorno de Vercel
-  const url = process.env.MANITOU_URL; // https://g4s.manitoucloud.com/manitou
-  const username = process.env.BOLD_USER; // INNOVATION
-  const password = process.env.BOLD_PASS; // Colombia.2025
+  // 1. Extraemos las credenciales ACTUALIZADAS desde Vercel
+  const url = process.env.MANITOU_URL; 
+  const username = process.env.BOLD_USER; // Ahora será APPIA
+  const password = process.env.BOLD_PASS; // Ahora será G4s.2026*
 
   try {
-    // 2. Preparamos los datos en formato x-www-form-urlencoded como pide Bold Group
+    // 2. Preparamos los datos para el formato OAUTH de Manitou
     const body = new URLSearchParams();
     body.append('grant_type', 'manitou_contact');
     body.append('username', username || '');
@@ -15,7 +15,7 @@ export async function GET() {
     body.append('context_serial_number', '1');
     body.append('context_contact_type', '0');
 
-    // 3. Hacemos la petición POST al endpoint de OAUTH
+    // 3. Llamada al endpoint de token
     const response = await fetch(`${url}/oauth/token`, {
       method: 'POST',
       headers: {
@@ -23,32 +23,31 @@ export async function GET() {
         'Accept': 'application/json'
       },
       body: body,
-      cache: 'no-store' // Para evitar que el navegador guarde una respuesta vieja
+      cache: 'no-store'
     });
 
     const data = await response.json();
 
-    // 4. Verificamos si la conexión fue exitosa
     if (response.ok) {
       return NextResponse.json({ 
         success: true, 
-        message: "¡Conexión exitosa con Manitou Cloud!",
+        message: "¡Conexión exitosa con Manitou Cloud usando credenciales APPIA!",
         access_token_received: !!data.access_token,
-        token_type: data.token_type,
         expires_in: data.expires_in
       });
     } else {
       return NextResponse.json({ 
         success: false, 
         error: data.error_description || "Error de autenticación",
-        details: data.error || "Revisa las credenciales en Vercel"
+        error_code: data.error,
+        tip: "Verifica que en Vercel las variables BOLD_USER y BOLD_PASS coincidan exactamente."
       }, { status: response.status });
     }
 
   } catch (error) {
     return NextResponse.json({ 
       success: false, 
-      error: "No se pudo alcanzar el servidor. Verifica la URL en Vercel." 
+      error: "Error de red: No se pudo alcanzar el servidor de Manitou." 
     }, { status: 500 });
   }
 }
