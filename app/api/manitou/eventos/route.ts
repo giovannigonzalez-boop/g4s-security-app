@@ -1,25 +1,29 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // Asegúrate de que en Vercel BOLD_URL sea: https://g4s.manitoucloud.com
-  // OJO: Sin el "/manitou" al final de la variable de entorno
-  const url = process.env.MANITOU_URL?.replace(/\/manitou$/, '').replace(/\/$/, '');
+  const url = process.env.MANITOU_URL?.replace(/\/$/, '');
   const username = process.env.BOLD_USER;
   const password = process.env.BOLD_PASS;
 
   try {
-    // 1. LOGIN - En Cloud suele ser /manitounext/oauth/token o /oauth/token
-    // Probaremos la ruta estándar de Cloud
+    // 1. LIMPIEZA DE CREDENCIALES Y LOGIN
+    const cleanUser = username?.trim();
+    const cleanPass = password?.trim();
+
     const authRes = await fetch(`${url}/oauth/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
       body: new URLSearchParams({
         'grant_type': 'manitou_contact',
-        'username': username || '',
-        'password': password || '',
+        'username': cleanUser || '',
+        'password': cleanPass || '',
         'context_serial_number': '1',
         'context_contact_type': '0'
-      })
+      }),
+      cache: 'no-store'
     });
 
     const authData = await authRes.json();
@@ -27,14 +31,13 @@ export async function GET() {
     if (!authData.access_token) {
       return NextResponse.json({ 
         success: false, 
-        error: "Error de autenticación", 
+        error: "Credenciales rechazadas por Manitou", 
         detail: authData,
-        attemptedUrl: `${url}/oauth/token`
+        enviado: { usuario: cleanUser } // Para verificar qué estamos mandando
       });
     }
 
-    // 2. CONSULTA DE ACTIVIDAD
-    // En Manitou Cloud la ruta de la API suele ser directa
+    // 2. CONSULTA DE ACTIVIDAD (Cuenta BOGCCC0)
     const activityRes = await fetch(`${url}/api/Customer/Activity`, {
       method: 'POST',
       headers: {
@@ -44,28 +47,33 @@ export async function GET() {
       },
       body: JSON.stringify({
         CustomerId: "BOGCCC0",
-        Top: 20
-      })
+        Top: 50
+      }),
+      cache: 'no-store'
     });
 
     const textResponse = await activityRes.text();
 
-    // Si recibimos HTML, es que la ruta /api/ no existe en la raíz
-    if (textResponse.includes("<!DOCTYPE")) {
+    // Verificación de respuesta HTML (Error del servidor)
+    if (textResponse.trim().startsWith("<!DOCTYPE") || textResponse.trim().startsWith("<html")) {
       return NextResponse.json({ 
         success: false, 
-        error: "Ruta de API no encontrada en la raíz. Intentando ruta alternativa...",
-        urlProbada: `${url}/api/Customer/Activity`
+        error: "El servidor respondió con una página de error (HTML).",
+        preview: textResponse.substring(0, 100)
       });
     }
 
     const eventData = JSON.parse(textResponse);
     return NextResponse.json({
       success: true,
-      data: eventData.Results || eventData
+      data: eventData.Results || eventData.Data || eventData
     });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: "Error de conexión", 
+      message: error.message 
+    }, { status: 500 });
   }
 }
