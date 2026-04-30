@@ -6,7 +6,6 @@ export async function GET() {
   const password = process.env.BOLD_PASS;
 
   try {
-    // 1. Obtener el Token de acceso
     const authBody = new URLSearchParams();
     authBody.append('grant_type', 'manitou_contact');
     authBody.append('username', username || '');
@@ -24,16 +23,13 @@ export async function GET() {
     const authData = await authRes.json();
     const token = authData.access_token;
 
-    if (!token) {
-      return NextResponse.json({ success: false, error: "No se pudo obtener el token" }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ success: false, error: "Sin Token" }, { status: 401 });
 
-    // 2. Definir rango de tiempo (Últimas 24 horas)
+    // --- CAMBIO AQUÍ: Rango de 7 días para asegurar que traiga datos ---
     const hoy = new Date();
-    const ayer = new Date();
-    ayer.setDate(hoy.getDate() - 1);
+    const hace7Dias = new Date();
+    hace7Dias.setDate(hoy.getDate() - 7);
 
-    // 3. Consultar la actividad real a Manitou
     const activityRes = await fetch(`${url}/api/Customer/Activity`, {
       method: 'POST',
       headers: {
@@ -41,9 +37,10 @@ export async function GET() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        Top: 50,
-        StartTime: ayer.toISOString(),
-        EndTime: hoy.toISOString(),
+        Top: 100,
+        // Usamos un formato de fecha más simple que Manitou entiende mejor
+        StartTime: hace7Dias.toISOString().split('.')[0], 
+        EndTime: hoy.toISOString().split('.')[0],
         IncludeAudits: true,
         IncludeEvents: true
       })
@@ -51,18 +48,15 @@ export async function GET() {
 
     const eventData = await activityRes.json();
     
-    // Manitou suele devolver los datos dentro de una propiedad llamada 'Results'
-    const finalData = eventData.Results || eventData.Data || eventData;
+    // Verificamos todas las posibles carpetas donde Manitou guarda los eventos
+    const finalData = eventData.Results || eventData.Data || (Array.isArray(eventData) ? eventData : []);
 
     return NextResponse.json({
       success: true,
-      data: Array.isArray(finalData) ? finalData : []
+      data: finalData
     });
 
   } catch (error: any) {
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message || "Error de conexión con Manitou" 
-    }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
