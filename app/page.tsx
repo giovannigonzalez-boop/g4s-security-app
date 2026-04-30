@@ -30,23 +30,31 @@ export default function G4SUnifiedFinalV2() {
       const response = await fetch('/api/manitou/eventos');
       const result = await response.json();
       
-      if (result.success && Array.isArray(result.data)) {
-        const mappedLogs = result.data.map((item: any) => ({
+      // CAMBIO CLAVE: Entramos a result.data.Results porque así viene de Manitou
+      const rawData = result.data?.Results || result.data || [];
+
+      if (result.success && Array.isArray(rawData)) {
+        const mappedLogs = rawData.map((item: any) => ({
           id: item.Id || item.EventID || Math.random(),
+          // Ajustamos los nombres según lo que vimos en la respuesta real de tu pantalla
           nombre_cliente: item.CustomerName || item.Name || "Cliente G4S",
           cuenta: item.CustomerId || "N/A",
-          tipo_evento: item.EventDescription || "Señal Recibida",
+          tipo_evento: item.EventDescription || "Evento Detectado",
           fecha_evento: item.Time ? new Date(item.Time).toLocaleTimeString() : new Date().toLocaleTimeString(),
           latitud: item.Latitude || 10.9685,
           longitud: item.Longitude || -74.7813
         }));
+
         setLogs(mappedLogs);
+        
         if (mappedLogs.length > 0) {
           setCoords({ lat: mappedLogs[0].latitud, lng: mappedLogs[0].longitud });
         }
+      } else {
+        console.log("No se encontraron resultados en .Results");
       }
     } catch (err) {
-      console.error("Error conectando con Manitou:", err);
+      console.error("Error conectando con el túnel:", err);
     }
     setLoading(false);
   };
