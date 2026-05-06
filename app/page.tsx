@@ -25,13 +25,10 @@ export default function G4SUnifiedFinalV2() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      const response = await fetch(`${supabaseUrl}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
         headers: {
-          'apikey': supabaseKey || '',
-          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         cache: 'no-store'
@@ -44,7 +41,6 @@ export default function G4SUnifiedFinalV2() {
           const evento = item.tipo_evento || "";
           let eventCode = "LOGGED"; 
           
-          // Lógica operativa ARC para iconos y botones
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
           } else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
@@ -71,7 +67,7 @@ export default function G4SUnifiedFinalV2() {
         }
       }
     } catch (err) {
-      console.error("Error cargando Supabase:", err);
+      console.error("Error cargando datos:", err);
     }
     setLoading(false);
   };
@@ -131,7 +127,7 @@ export default function G4SUnifiedFinalV2() {
                   </div>
                 </div>
                 {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}>
+                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 15px rgba(225, 29, 72, 0.3)' }}>
                     ANULAR ALERTA PÁNICO
                   </button>
                 )}
@@ -151,6 +147,10 @@ export default function G4SUnifiedFinalV2() {
             </strong>
           </div>
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <MapPin size={20} color="#E11D48" />
+              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
+            </div>
             <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
               <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
             </div>
