@@ -22,7 +22,6 @@ export default function G4SUnifiedFinalV2() {
     }
   };
 
-  // --- FUNCIÓN DE CONEXIÓN DIRECTA A SUPABASE ---
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -43,16 +42,11 @@ export default function G4SUnifiedFinalV2() {
       if (Array.isArray(data)) {
         const mappedLogs = data.map((item: any) => {
           const evento = item.tipo_evento || "";
-          
-          // LÓGICA DE NEGOCIO G4S ARC: Traducción de textos a códigos visuales
           let eventCode = "LOGGED"; 
           
-          // Detectar Pánico / Alerta (Botón Rojo)
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
-          } 
-          // Detectar Armado/Desarmado (Iconos Verdes)
-          else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
+          } else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
             eventCode = "CLOSING";
           } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
             eventCode = "OPENING";
@@ -64,7 +58,7 @@ export default function G4SUnifiedFinalV2() {
             cuenta: item.cuenta || "N/A",
             tipo_evento: evento,
             fecha_evento: new Date(item.created_at).toLocaleTimeString(),
-            EventCode: eventCode, // Este campo activa los colores y el botón
+            EventCode: eventCode,
             latitud: item.latitud || 10.9685,
             longitud: item.longitud || -74.7813
           };
@@ -85,7 +79,7 @@ export default function G4SUnifiedFinalV2() {
     if (session) fetchData(); 
   }, [session]);
 
-  const G4SLogo = ({ size = "normal" }) => (
+  const G4SLogo = ({ size = "normal" }: { size?: string }) => (
     <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px 25px' : '10px 15px', borderRadius: '8px', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)', minWidth: size === "large" ? '120px' : '70px' }}>
       <span style={{ fontSize: size === "large" ? '32px' : '20px', fontWeight: '900', lineHeight: 0.9 }}>G4S</span>
       <span style={{ fontSize: size === "large" ? '14px' : '10px', fontWeight: 'bold', letterSpacing: '3px', marginTop: '2px', borderTop: '1px solid rgba(255,255,255,0.3)', width: '100%', textAlign: 'center' }}>ARC</span>
@@ -140,6 +134,50 @@ export default function G4SUnifiedFinalV2() {
                   </div>
                 </div>
 
-                {/* BOTÓN DINÁMICO DE ANULACIÓN */}
                 {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E1
+                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}>
+                    ANULAR FALSA ALARMA
+                  </button>
+                )}
+                
+                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
+            <div style={{ 
+              width: '120px', height: '120px', borderRadius: '50%', 
+              border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              margin: '0 auto 20px', 
+              backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' 
+            }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
+            </div>
+            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
+            </strong>
+          </div>
+
+          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <MapPin size={20} color="#E11D48" />
+              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
+            </div>
+            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <style jsx>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+}
