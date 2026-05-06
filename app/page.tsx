@@ -44,9 +44,12 @@ export default function G4SUnifiedFinalV2() {
           const evento = item.tipo_evento || "";
           let eventCode = "LOGGED"; 
           
+          // Lógica para detectar PÁNICO y activar BOTÓN ROJO [cite: 50, 118]
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
-          } else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
+          } 
+          // Lógica para SISTEMA ARMADO/DESARMADO (Iconos Verdes) [cite: 47, 133, 134]
+          else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
             eventCode = "CLOSING";
           } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
             eventCode = "OPENING";
@@ -136,7 +139,7 @@ export default function G4SUnifiedFinalV2() {
 
                 {log.EventCode === 'BURGLARY' && (
                   <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}>
-                    ANULAR FALSA ALARMA
+                    ANULAR ALERTA PÁNICO
                   </button>
                 )}
                 
