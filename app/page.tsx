@@ -13,7 +13,6 @@ export default function G4SUnifiedFinalV2() {
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
-  // Credenciales de acceso
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
@@ -27,7 +26,6 @@ export default function G4SUnifiedFinalV2() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Usamos las variables de entorno de Vercel para conectar a Supabase
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -46,15 +44,18 @@ export default function G4SUnifiedFinalV2() {
         const mappedLogs = data.map((item: any) => {
           const evento = item.tipo_evento || "";
           
-          // LÓGICA DE NEGOCIO G4S ARC: Identificación de códigos para la interfaz
-          let eventCode = "LOGGED"; // Gris por defecto
+          // LÓGICA DE NEGOCIO G4S ARC: Traducción de textos a códigos visuales
+          let eventCode = "LOGGED"; 
           
-          if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
-            eventCode = "CLOSING"; // Activa iconos de sistema armado
+          // Detectar Pánico / Alerta (Botón Rojo)
+          if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
+            eventCode = "BURGLARY";
+          } 
+          // Detectar Armado/Desarmado (Iconos Verdes)
+          else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
+            eventCode = "CLOSING";
           } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
-            eventCode = "OPENING"; // Activa iconos de sistema desarmado
-          } else if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
-            eventCode = "BURGLARY"; // ACTIVA BOTÓN ROJO DE ANULAR PÁNICO
+            eventCode = "OPENING";
           }
 
           return {
@@ -63,7 +64,7 @@ export default function G4SUnifiedFinalV2() {
             cuenta: item.cuenta || "N/A",
             tipo_evento: evento,
             fecha_evento: new Date(item.created_at).toLocaleTimeString(),
-            EventCode: eventCode,
+            EventCode: eventCode, // Este campo activa los colores y el botón
             latitud: item.latitud || 10.9685,
             longitud: item.longitud || -74.7813
           };
@@ -75,7 +76,7 @@ export default function G4SUnifiedFinalV2() {
         }
       }
     } catch (err) {
-      console.error("Error cargando datos de Supabase:", err);
+      console.error("Error cargando datos:", err);
     }
     setLoading(false);
   };
@@ -91,7 +92,6 @@ export default function G4SUnifiedFinalV2() {
     </div>
   );
 
-  // Pantalla de Login
   if (!session) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
@@ -105,10 +105,8 @@ export default function G4SUnifiedFinalV2() {
     );
   }
 
-  // Dashboard Principal
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      {/* Sidebar */}
       <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
@@ -116,14 +114,13 @@ export default function G4SUnifiedFinalV2() {
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
 
-      {/* Main Content */}
       <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
         <section>
           <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
           
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Historial de Señales (Supabase)</h3>
+              <h3 style={{ margin: 0 }}>Historial Real G4S ARC</h3>
               <div onClick={fetchData} style={{ cursor: 'pointer' }}>
                 <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
               </div>
@@ -143,52 +140,6 @@ export default function G4SUnifiedFinalV2() {
                   </div>
                 </div>
 
-                {/* BOTÓN ROJO DE ANULAR (Solo si es Pánico/Burglary) */}
+                {/* BOTÓN DINÁMICO DE ANULACIÓN */}
                 {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    ANULAR FALSA ALARMA
-                  </button>
-                )}
-                
-                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Sidebar Derecha (Widgets) */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div style={{ 
-              width: '120px', height: '120px', borderRadius: '50%', 
-              border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              margin: '0 auto 20px', 
-              backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' 
-            }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
-            </div>
-            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
-            </strong>
-          </div>
-
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <MapPin size={20} color="#E11D48" />
-              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
-            </div>
-            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
-            </div>
-          </div>
-        </aside>
-      </main>
-
-      <style jsx>{`
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
-}
+                  <button style={{ backgroundColor: '#E1
