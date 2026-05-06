@@ -14,39 +14,37 @@ export async function GET() {
       cache: 'no-store'
     });
 
-    if (!response.ok) throw new Error("Fallo en la conexión con Supabase");
-
     const rawData = await response.json();
 
-    // MAPEADO BASADO EN TU DOCUMENTACIÓN TÉCNICA
     const mappedData = rawData.map((item: any) => {
       const evento = item.tipo_evento || "";
-      let eventCode = "LOGGED"; // Estado por defecto (Icono neutro)
+      let eventCode = "LOGGED"; // Estado neutro
 
-      // 1. Lógica para SISTEMA ARMADO / DESARMADO (Iconos Verdes) [cite: 47, 114]
-      if (evento.includes("Activacion") || evento.includes("Cierre Tardio") || evento.includes("Armado")) {
+      // 1. ACTIVACIÓN DE ICONOS VERDES (ARMADO/DESARMADO)
+      if (evento.includes("Activacion") || evento.includes("Cierre") || evento.includes("Armado")) {
         eventCode = "CLOSING"; 
       } else if (evento.includes("Anulacion") || evento.includes("Apertura") || evento.includes("Desarmado")) {
         eventCode = "OPENING";
       }
 
-      // 2. Lógica para PÁNICO y BOTÓN DE ANULACIÓN (Icono Rojo + Botón) [cite: 50, 118]
+      // 2. ACTIVACIÓN DE BOTÓN ROJO (ANULAR ALERTA PÁNICO)
+      // Usamos los términos detectados en tu tabla alarm_logs
       if (evento.includes("Person detected") || evento.toLowerCase().includes("panico")) {
         eventCode = "BURGLARY";
       }
 
-      // 3. Lógica para señales ya ANULADAS [cite: 119]
+      // 3. ESTADO ARCHIVADO (FALSA ALARMA ANULADA)
       if (evento.includes("Falsa Alarma Anulada")) {
         eventCode = "ALARM_CANCEL";
       }
 
       return {
         id: item.id,
-        CustomerName: item.nombre_cliente, // [cite: 73]
-        CustomerNo: item.cuenta, // [cite: 74]
-        EventDescription: item.tipo_evento, // 
-        CreationTime: item.created_at, // [cite: 77]
-        EventCode: eventCode, // El "cerebro" de la visualización
+        CustomerName: item.nombre_cliente || "Cliente G4S",
+        CustomerNo: item.cuenta || "N/A",
+        EventDescription: evento,
+        CreationTime: item.created_at,
+        EventCode: eventCode, // Este campo controla TODA la visualización
         lat: item.latitud,
         lng: item.longitud,
         Status: "Pending"
