@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Home, ShieldCheck, RefreshCw, CheckCircle2, 
-  LogOut, MapPin, ShieldAlert, Radio, Lock, Unlock 
+  LogOut, MapPin, ShieldAlert, Radio, Lock 
 } from 'lucide-react';
 
 export default function G4SARC_FinalConsole() {
@@ -30,13 +30,11 @@ export default function G4SARC_FinalConsole() {
       });
       const data = await res.json();
       if (Array.isArray(data)) {
-        const mapped = data.map(item => {
+        const mapped = data.map((item: any) => {
           const ev = (item.tipo_evento || "").toLowerCase();
           let type = "NORMAL";
-          // Lógica ARC: Identificación de señales críticas
           if (ev.includes("panico") || ev.includes("person") || ev.includes("alarma")) type = "ALARM";
           if (ev.includes("armado") || ev.includes("cierre") || ev.includes("desarmado") || ev.includes("apertura")) type = "SYSTEM";
-          
           return { ...item, category: type };
         });
         setLogs(mapped);
@@ -48,23 +46,25 @@ export default function G4SARC_FinalConsole() {
 
   useEffect(() => { if (session) fetchData(); }, [session]);
 
-  const G4SLogo = ({ size = "normal" }) => (
-    <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px' : '10px', borderRadius: '8px', textAlign: 'center', display: 'inline-block', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)' }}>
+  const G4SLogo = ({ size = "normal" }: { size?: string }) => (
+    <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px' : '10px', borderRadius: '8px', textAlign: 'center', display: 'inline-block' }}>
       <div style={{ fontSize: size === "large" ? '24px' : '18px', fontWeight: '900' }}>G4S</div>
-      <div style={{ fontSize: '10px', letterSpacing: '2px', borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '2px' }}>ARC</div>
+      <div style={{ fontSize: '10px', letterSpacing: '2px', borderTop: '1px solid white' }}>ARC</div>
     </div>
   );
 
-  if (!session) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
-      <form onSubmit={handleLogin} style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center' }}>
-        <G4SLogo size="large" /><br/><br/>
-        <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} style={{ width: '100%', padding: '14px', marginBottom: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }} />
-        <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '14px', marginBottom: '24px', borderRadius: '12px', border: '1px solid #E2E8F0' }} />
-        <button style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>INGRESAR AL SISTEMA</button>
-      </form>
-    </div>
-  );
+  if (!session) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
+        <form onSubmit={handleLogin} style={{ background: 'white', padding: '40px', borderRadius: '24px', width: '320px', textAlign: 'center' }}>
+          <G4SLogo size="large" /><br/><br/>
+          <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+          <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #ddd' }} />
+          <button style={{ width: '100%', padding: '12px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>ENTRAR</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
@@ -88,4 +88,4 @@ export default function G4SARC_FinalConsole() {
             {logs.map((log) => (
               <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderBottom: '1px solid #F1F5F9', alignItems: 'center' }}>
                 <div style={{ display: 'flex', gap: '18px' }}>
-                  <div style={{ background: log.category === 'ALARM' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
+                  <div style={{ background: log.category === 'ALARM' ? '#FFF1F2' : '#F0FDF4', padding: '12px
