@@ -1,13 +1,27 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, MapPin, Clock } from 'lucide-react';
+import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, MapPin } from 'lucide-react';
 
-export default function G4S_ARC_Console_Final_Precise() {
+export default function G4S_Console_Total_Final_V5() {
+  // Manejo de sesión restaurado
   const [session, setSession] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<any>(null);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
+
+  // Función de Login
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
+      setSession(true);
+    } else {
+      alert('Credenciales incorrectas. Verifique usuario y contraseña.');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -22,30 +36,25 @@ export default function G4S_ARC_Console_Final_Precise() {
       setLogs(logsArray);
       
       if (logsArray[0]) {
-        // EXTRAEMOS LAS COORDENADAS REALES DE LA BASE DE DATOS
         const latBD = parseFloat(logsArray[0].latitud);
         const lngBD = parseFloat(logsArray[0].longitud);
-        
         if (!isNaN(latBD) && !isNaN(lngBD)) {
           setCoords({ lat: latBD, lng: lngBD });
         }
-
         if (!currentAccount) {
           setCurrentAccount({ nombre: logsArray[0].nombre_cliente, cuenta: logsArray[0].cuenta });
         }
       }
-    } catch (e) { console.error("Error en Fetch:", e); }
+    } catch (e) { console.error("Error Fetch:", e); }
     setLoading(false);
   };
 
   const createEvent = async (tipo: string, nuevoCiclo: boolean = false) => {
     let clientName, accountNumber, lat, lng;
-
     if (nuevoCiclo || !currentAccount) {
       const id = Math.floor(1000 + Math.random() * 9000);
       clientName = `CLIENTE ARC - ${id}`;
       accountNumber = `ARC-${id}`;
-      // Coordenadas simuladas dentro de un área específica (Barranquilla)
       lat = 10.963 + (Math.random() * 0.01);
       lng = -74.781 - (Math.random() * 0.01);
       setCurrentAccount({ nombre: clientName, cuenta: accountNumber });
@@ -55,7 +64,6 @@ export default function G4S_ARC_Console_Final_Precise() {
       lat = coords.lat;
       lng = coords.lng;
     }
-
     try {
       await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/alarm_logs`, {
         method: 'POST',
@@ -74,7 +82,7 @@ export default function G4S_ARC_Console_Final_Precise() {
         })
       });
       fetchData();
-    } catch (e) { console.error("Error en Post:", e); }
+    } catch (e) { console.error("Error Post:", e); }
   };
 
   useEffect(() => { if (session) fetchData(); }, [session]);
@@ -82,27 +90,40 @@ export default function G4S_ARC_Console_Final_Precise() {
   const latest = logs[0] || {};
   const isPanic = latest.tipo_evento === "PÁNICO";
   const isArmed = latest.tipo_evento === "Sistema Armado";
-
-  // GENERADOR DE BBOX PARA EL MAPA (ESTO ASEGURA QUE EL MARCADOR COINCIDA)
-  const delta = 0.002; // Zoom ajustado
+  const delta = 0.002;
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - delta},${coords.lat - delta},${coords.lng + delta},${coords.lat + delta}&layer=mapnik&marker=${coords.lat},${coords.lng}`;
 
+  // VISTA DE LOGIN
   if (!session) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
-      <div style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center' }}>
+      <form onSubmit={handleLogin} style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '15px', borderRadius: '12px', fontWeight: '900', fontSize: '24px', marginBottom: '30px' }}>G4S ARC</div>
-        <button onClick={() => setSession(true)} style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>CONECTAR CONSOLA</button>
-      </div>
+        <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748B', marginLeft: '5px' }}>USUARIO</label>
+          <input type="text" placeholder="admin" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '14px', marginTop: '5px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box' }} />
+        </div>
+        <div style={{ textAlign: 'left', marginBottom: '30px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748B', marginLeft: '5px' }}>CONTRASEÑA</label>
+          <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '14px', marginTop: '5px', borderRadius: '12px', border: '1px solid #E2E8F0', boxSizing: 'border-box' }} />
+        </div>
+        <button type="submit" style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>CONECTAR CONSOLA</button>
+      </form>
     </div>
   );
 
+  // VISTA PRINCIPAL
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
       <aside style={{ width: '90px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '10px', borderRadius: '8px', fontWeight: '900', fontSize: '18px', marginBottom: '40px' }}>G4S</div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px' }}><Home size={28} color="#E11D48" /></div>
         <div style={{ flex: 1 }} />
-        <LogOut onClick={() => setSession(false)} size={28} color="#94A3B8" style={{ cursor: 'pointer' }} />
+        
+        {/* BOTÓN CERRAR SESIÓN RESTAURADO */}
+        <button onClick={() => setSession(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: '20px', color: '#94A3B8', transition: '0.2s' }}>
+          <LogOut size={30} />
+          <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>SALIR</div>
+        </button>
       </aside>
 
       <main style={{ flex: 1, marginLeft: '90px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
@@ -148,7 +169,6 @@ export default function G4S_ARC_Console_Final_Precise() {
              </button>
           </div>
 
-          {/* GPS SINCRONIZADO POR KEY */}
           <div style={{ background: 'white', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <div style={{ fontWeight: '900', marginBottom: '10px', fontSize: '13px', display: 'flex', gap: '5px' }}><MapPin size={16} color="#E11D48" /> UBICACIÓN EN TIEMPO REAL</div>
             <div style={{ width: '100%', height: '230px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #F1F5F9' }}>
@@ -158,13 +178,12 @@ export default function G4S_ARC_Console_Final_Precise() {
                  height="100%" 
                  frameBorder="0" 
                  src={mapSrc}
-                 style={{ filter: 'grayscale(0.2)' }}
                ></iframe>
             </div>
           </div>
 
           <div style={{ background: '#0F172A', padding: '25px', borderRadius: '25px' }}>
-            <button onClick={() => createEvent("PÁNICO", true)} style={{ width: '100%', padding: '15px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>SIMULAR PÁNICO</button>
+            <button onClick={() => createEvent("PÁNICO", true)} style={{ width: '100%', padding: '15px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>SIMULAR PÁNICO REAL</button>
           </div>
         </aside>
       </main>
