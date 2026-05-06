@@ -14,31 +14,39 @@ export async function GET() {
       cache: 'no-store'
     });
 
+    if (!response.ok) throw new Error("Fallo en la conexión con Supabase");
+
     const rawData = await response.json();
 
+    // MAPEADO BASADO EN TU DOCUMENTACIÓN TÉCNICA
     const mappedData = rawData.map((item: any) => {
-      let finalEventCode = "LOGGED"; 
       const evento = item.tipo_evento || "";
+      let eventCode = "LOGGED"; // Estado por defecto (Icono neutro)
 
-      // 1. Detectar PÁNICO para mostrar el BOTÓN ROJO
+      // 1. Lógica para SISTEMA ARMADO / DESARMADO (Iconos Verdes) [cite: 47, 114]
+      if (evento.includes("Activacion") || evento.includes("Cierre Tardio") || evento.includes("Armado")) {
+        eventCode = "CLOSING"; 
+      } else if (evento.includes("Anulacion") || evento.includes("Apertura") || evento.includes("Desarmado")) {
+        eventCode = "OPENING";
+      }
+
+      // 2. Lógica para PÁNICO y BOTÓN DE ANULACIÓN (Icono Rojo + Botón) [cite: 50, 118]
       if (evento.includes("Person detected") || evento.toLowerCase().includes("panico")) {
-        finalEventCode = "BURGLARY";
-      } 
-      // 2. Detectar ARMADO para icono VERDE
-      else if (evento.includes("Activacion") || evento.includes("Cierre") || evento.includes("Armado")) {
-        finalEventCode = "CLOSING";
-      } 
-      // 3. Detectar DESARMADO/ANULACIÓN para icono VERDE
-      else if (evento.includes("Anulacion") || evento.includes("Apertura") || evento.includes("Desarmado")) {
-        finalEventCode = "OPENING";
+        eventCode = "BURGLARY";
+      }
+
+      // 3. Lógica para señales ya ANULADAS [cite: 119]
+      if (evento.includes("Falsa Alarma Anulada")) {
+        eventCode = "ALARM_CANCEL";
       }
 
       return {
-        CustomerName: item.nombre_cliente || "Cliente G4S",
-        EventDescription: evento,
-        CustomerNo: item.cuenta || "N/A",
-        CreationTime: item.created_at,
-        EventCode: finalEventCode, // Este es el que activa los botones
+        id: item.id,
+        CustomerName: item.nombre_cliente, // [cite: 73]
+        CustomerNo: item.cuenta, // [cite: 74]
+        EventDescription: item.tipo_evento, // 
+        CreationTime: item.created_at, // [cite: 77]
+        EventCode: eventCode, // El "cerebro" de la visualización
         lat: item.latitud,
         lng: item.longitud,
         Status: "Pending"
