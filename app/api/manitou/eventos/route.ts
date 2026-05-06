@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // Usamos las variables de Supabase que ya configuraste en Vercel
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   try {
-    // Petición directa a la base de datos de Supabase
-    const response = await fetch(`${supabaseUrl}/rest/v1/eventos?select=*&order=CreationTime.desc`, {
+    // CAMBIO CLAVE: Usamos tu tabla real 'alarm_logs' y ordenamos por 'created_at'
+    const response = await fetch(`${supabaseUrl}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
       headers: {
         'apikey': supabaseKey || '',
         'Authorization': `Bearer ${supabaseKey}`,
@@ -21,13 +20,21 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Error en Supabase", details: errorText });
     }
 
-    const data = await response.json();
+    const rawData = await response.json();
 
-    // Importante: Mapeamos los datos para que la App los entienda
-    // Si tus columnas en Supabase tienen nombres distintos, me avisas.
+    // MAPEAMOS los nombres de Supabase a los que tu App espera para mostrarse bien
+    const mappedData = rawData.map((item: any) => ({
+      CustomerName: item.nombre_cliente,
+      EventDescription: item.tipo_evento,
+      CustomerNo: item.cuenta,
+      CreationTime: item.created_at,
+      lat: item.latitud,
+      lng: item.longitud
+    }));
+
     return NextResponse.json({
       success: true,
-      data: data || []
+      data: mappedData || []
     });
   } catch (error: any) {
     return NextResponse.json({ 
