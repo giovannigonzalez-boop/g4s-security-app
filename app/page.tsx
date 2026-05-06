@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, Clock, MapPin } from 'lucide-react';
+import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, MapPin } from 'lucide-react';
 
 export default function G4S_ARC_Console_Final() {
   const [session, setSession] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  // Coordenadas iniciales (Barranquilla)
   const [currentCoords, setCurrentCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
   const fetchData = async () => {
@@ -20,20 +19,22 @@ export default function G4S_ARC_Console_Final() {
       const data = await res.json();
       setLogs(Array.isArray(data) ? data : []);
       
-      // Si el registro más reciente tiene coordenadas, movemos el mapa
+      // Actualizamos GPS con el evento más reciente
       if (data[0] && data[0].latitud && data[0].longitud) {
-        setCurrentCoords({ lat: data[0].latitud, lng: data[0].longitud });
+        setCurrentCoords({ 
+          lat: parseFloat(data[0].latitud), 
+          lng: parseFloat(data[0].longitud) 
+        });
       }
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  // FUNCIÓN GENÉRICA PARA CREAR EVENTOS (PANICO O ARMADO) CON DATOS ALEATORIOS
   const createNewEvent = async (tipo: string) => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
-    // Generar coordenadas aleatorias cerca de Barranquilla para que el mapa se mueva
-    const newLat = 10.96 + (Math.random() * 0.05);
-    const newLng = -74.78 - (Math.random() * 0.05);
+    // Variación de coordenadas para ver movimiento real en el mapa
+    const newLat = 10.963 + (Math.random() * 0.015);
+    const newLng = -74.785 - (Math.random() * 0.015);
     
     try {
       await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/alarm_logs`, {
@@ -52,7 +53,7 @@ export default function G4S_ARC_Console_Final() {
           created_at: new Date().toISOString()
         })
       });
-      fetchData(); // Refrescar historial y mapa
+      fetchData();
     } catch (e) { console.error(e); }
   };
 
@@ -64,13 +65,12 @@ export default function G4S_ARC_Console_Final() {
 
   if (!session) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A' }}>
-      <button onClick={() => setSession(true)} style={{ padding: '20px 40px', background: '#E11D48', color: 'white', borderRadius: '15px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '18px' }}>ENTRAR A CONSOLA G4S</button>
+      <button onClick={() => setSession(true)} style={{ padding: '20px 40px', background: '#E11D48', color: 'white', borderRadius: '15px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '18px' }}>INGRESAR A CONSOLA G4S</button>
     </div>
   );
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      {/* SIDEBAR */}
       <aside style={{ width: '90px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '10px', borderRadius: '8px', fontWeight: 'bold', marginBottom: '40px' }}>G4S</div>
         <Home size={28} color="#E11D48" />
@@ -78,7 +78,6 @@ export default function G4S_ARC_Console_Final() {
         <LogOut onClick={() => setSession(false)} size={28} color="#94A3B8" style={{ cursor: 'pointer', marginBottom: '20px' }} />
       </aside>
 
-      {/* MAIN */}
       <main style={{ flex: 1, marginLeft: '90px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -94,7 +93,7 @@ export default function G4S_ARC_Console_Final() {
                     {log.tipo_evento === 'PÁNICO' ? <ShieldAlert color="#E11D48" /> : <ShieldCheck color="#10B981" />}
                   </div>
                   <div>
-                    <div style={{ fontWeight: '800', fontSize: '16px', color: log.tipo_evento === 'PÁNICO' ? '#E11D48' : '#0F172A' }}>{log.tipo_evento}</div>
+                    <div style={{ fontWeight: '800', fontSize: '15px', color: log.tipo_evento === 'PÁNICO' ? '#E11D48' : '#0F172A' }}>{log.tipo_evento}</div>
                     <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • <b>{log.cuenta}</b> • {log.created_at ? new Date(log.created_at).toLocaleTimeString() : ''}</div>
                   </div>
                 </div>
@@ -103,10 +102,7 @@ export default function G4S_ARC_Console_Final() {
           </div>
         </section>
 
-        {/* PANEL DERECHO */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          
-          {/* BOTÓN ARMADO/DESARMADO (GENERA NUEVA CUENTA) */}
           <div style={{ background: 'white', padding: '30px', borderRadius: '35px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', textAlign: 'center' }}>
              <button 
                 onClick={() => createNewEvent(isArmed ? "Sistema Desarmado" : "Sistema Armado")}
@@ -117,7 +113,6 @@ export default function G4S_ARC_Console_Final() {
              </button>
           </div>
 
-          {/* BOTÓN ANULAR (SOLO SI EL ÚLTIMO ES PÁNICO) */}
           {isPanic && (
             <button 
               onClick={() => createNewEvent("FALSA ALARMA ANULADA")}
@@ -128,17 +123,17 @@ export default function G4S_ARC_Console_Final() {
             </button>
           )}
 
-          {/* GPS DINÁMICO CONECTADO AL ÚLTIMO REGISTRO */}
           <div style={{ background: 'white', padding: '20px', borderRadius: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '15px', display: 'flex', gap: '8px', fontSize: '14px' }}><MapPin color="#E11D48" /> UBICACIÓN EN TIEMPO REAL</div>
-            <img 
-              src={`https://static-maps.yandex.ru/1.x/?ll=${currentCoords.lng},${currentCoords.lat}&z=14&l=map&size=360,240&pt=${currentCoords.lng},${currentCoords.lat},pm2rdl`} 
-              style={{ width: '100%', borderRadius: '20px', border: '1px solid #E2E8F0' }} 
-              alt="GPS"
-            />
+            <div style={{ width: '100%', height: '240px', borderRadius: '20px', overflow: 'hidden' }}>
+              <img 
+                src={`https://static-maps.yandex.ru/1.x/?ll=${currentCoords.lng},${currentCoords.lat}&z=14&l=map&size=360,240&pt=${currentCoords.lng},${currentCoords.lat},pm2rdl`} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                alt="Mapa GPS"
+              />
+            </div>
           </div>
 
-          {/* SIMULADOR DE PÁNICO */}
           <div style={{ background: '#0F172A', padding: '30px', borderRadius: '30px', textAlign: 'center' }}>
             <Radio color="#E11D48" style={{ marginBottom: '15px' }} />
             <button onClick={() => createNewEvent("PÁNICO")} style={{ width: '100%', padding: '15px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>SIMULAR PÁNICO</button>
