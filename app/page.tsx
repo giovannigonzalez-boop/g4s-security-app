@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, MapPin, Clock } from 'lucide-react';
 
-export default function G4S_ARC_Console_Final_GPS() {
+export default function G4S_Console_Final_Fixed() {
   const [session, setSession] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -18,16 +18,15 @@ export default function G4S_ARC_Console_Final_GPS() {
         headers: { 'apikey': key || '', 'Authorization': `Bearer ${key}`, 'Cache-Control': 'no-cache' }
       });
       const data = await res.json();
-      setLogs(Array.isArray(data) ? data : []);
+      const logsArray = Array.isArray(data) ? data : [];
+      setLogs(logsArray);
       
-      if (data[0]) {
-        // Actualizamos coordenadas del ciclo actual
-        const newLat = parseFloat(data[0].latitud) || 10.9685;
-        const newLng = parseFloat(data[0].longitud) || -74.7813;
+      if (logsArray[0]) {
+        const newLat = parseFloat(logsArray[0].latitud) || 10.9685;
+        const newLng = parseFloat(logsArray[0].longitud) || -74.7813;
         setCoords({ lat: newLat, lng: newLng });
-        
         if (!currentAccount) {
-          setCurrentAccount({ nombre: data[0].nombre_cliente, cuenta: data[0].cuenta });
+          setCurrentAccount({ nombre: logsArray[0].nombre_cliente, cuenta: logsArray[0].cuenta });
         }
       }
     } catch (e) { console.error(e); }
@@ -38,9 +37,8 @@ export default function G4S_ARC_Console_Final_GPS() {
     let clientName, accountNumber, lat, lng;
     if (nuevoCiclo || !currentAccount) {
       const id = Math.floor(1000 + Math.random() * 9000);
-      clientName = `ABONADO VIP - ${id}`;
+      clientName = `CLIENTE VIP - ${id}`;
       accountNumber = `ARC-${id}`;
-      // Generamos puntos aleatorios en Barranquilla
       lat = 10.96 + (Math.random() * 0.03);
       lng = -74.78 - (Math.random() * 0.03);
       setCurrentAccount({ nombre: clientName, cuenta: accountNumber });
@@ -78,21 +76,20 @@ export default function G4S_ARC_Console_Final_GPS() {
   const isPanic = latest.tipo_evento === "PÁNICO";
   const isArmed = latest.tipo_evento === "Sistema Armado";
 
-  // URL DE MAPA ESTÁTICO DE OPENSTREETMAP (MÁS CONFIABLE QUE YANDEX)
-  const mapUrl = `https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`;
+  // URL de mapa alternativa (OpenStreetMap) más estable que Yandex
+  const mapUrl = `https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=15&l=map&size=450,250&pt=${coords.lng},${coords.lat},pm2rdl`;
 
   if (!session) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
-      <div style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+      <div style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '15px', borderRadius: '12px', fontWeight: '900', fontSize: '24px', marginBottom: '30px' }}>G4S ARC</div>
-        <button onClick={() => setSession(true)} style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>INGRESAR A CONSOLA</button>
+        <button onClick={() => setSession(true)} style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>ENTRAR A CONSOLA</button>
       </div>
     </div>
   );
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      {/* SIDEBAR */}
       <aside style={{ width: '90px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '10px', borderRadius: '8px', fontWeight: '900', fontSize: '18px', marginBottom: '40px' }}>G4S</div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px' }}><Home size={28} color="#E11D48" /></div>
@@ -116,9 +113,7 @@ export default function G4S_ARC_Console_Final_GPS() {
                   </div>
                   <div>
                     <div style={{ fontWeight: '800', fontSize: '16px', color: log.tipo_evento?.includes('PÁNICO') ? '#E11D48' : '#0F172A' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '13px', color: '#64748B' }}>
-                      {log.nombre_cliente} • <b>{log.cuenta}</b> • <Clock size={12} style={{display:'inline', marginBottom:'-2px'}}/> {new Date(log.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                    </div>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • <b>{log.cuenta}</b> • {new Date(log.created_at).toLocaleTimeString()}</div>
                   </div>
                 </div>
               </div>
@@ -127,17 +122,15 @@ export default function G4S_ARC_Console_Final_GPS() {
         </section>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          {/* ESTADO MAESTRO */}
           <div style={{ background: 'white', padding: '30px', borderRadius: '30px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
              <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: `4px solid ${isPanic ? '#E11D48' : '#10B981'}`, margin: '0 auto 15px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isPanic ? '#FFF1F2' : '#F0FDF4' }}>
                 {isPanic ? <ShieldAlert size={40} color="#E11D48" /> : <ShieldCheck size={40} color="#10B981" />}
              </div>
-             <h3 style={{ margin: 0, fontWeight: '900', color: isPanic ? '#E11D48' : '#10B981' }}>{isPanic ? 'ALERTA ACTIVA' : 'SISTEMA SEGURO'}</h3>
+             <h3 style={{ margin: 0, fontWeight: '900', color: isPanic ? '#E11D48' : '#10B981' }}>{isPanic ? 'ALERTA DETECTADA' : 'SISTEMA SEGURO'}</h3>
           </div>
 
-          {/* ACCIÓN DE CICLO (MISMA CUENTA) */}
           {isPanic && (
-            <button onClick={() => createEvent("ANULADA (FALSA ALARMA)", false)} style={{ width: '100%', padding: '25px', background: '#FFF1F2', color: '#E11D48', border: '2px solid #E11D48', borderRadius: '25px', fontWeight: '900', cursor: 'pointer', fontSize:'16px' }}>ANULAR PÁNICO</button>
+            <button onClick={() => createEvent("ANULADA (FALSA ALARMA)", false)} style={{ width: '100%', padding: '25px', background: '#FFF1F2', color: '#E11D48', border: '2px solid #E11D48', borderRadius: '25px', fontWeight: '900', cursor: 'pointer' }}>ANULAR PÁNICO</button>
           )}
 
           <div style={{ background: 'white', padding: '25px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
@@ -146,25 +139,23 @@ export default function G4S_ARC_Console_Final_GPS() {
              </button>
           </div>
 
-          {/* GPS REPARADO CON KEY DINÁMICA */}
+          {/* GPS REPARADO CON MAPA ESTATICO DE GOOGLE/YANDEX REFORZADO */}
           <div style={{ background: 'white', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <div style={{ fontWeight: '900', marginBottom: '10px', fontSize: '14px', display: 'flex', gap: '5px' }}><MapPin size={18} color="#E11D48" /> UBICACIÓN ARC</div>
-            <div style={{ width: '100%', height: '220px', borderRadius: '20px', overflow: 'hidden', background: '#f1f5f9' }}>
-               <img 
-                 src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} 
-                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                 alt="Mapa" 
-                 key={coords.lat}
-                 onError={(e) => {
-                   (e.target as HTMLImageElement).src = `https://maps.googleapis.com/maps/api/staticmap?center=${coords.lat},${coords.lng}&zoom=15&size=400x250&markers=color:red%7C${coords.lat},${coords.lng}&key=`;
-                 }}
-               />
+            <div style={{ width: '100%', height: '220px', borderRadius: '20px', overflow: 'hidden' }}>
+              <iframe 
+                width="100%" 
+                height="100%" 
+                frameBorder="0" 
+                style={{ border: 0 }}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng-0.005},${coords.lat-0.005},${coords.lng+0.005},${coords.lat+0.005}&layer=mapnik&marker=${coords.lat},${coords.lng}`}
+                allowFullScreen
+              ></iframe>
             </div>
           </div>
 
-          {/* SIMULADOR */}
           <div style={{ background: '#0F172A', padding: '25px', borderRadius: '25px' }}>
-            <button onClick={() => createEvent("PÁNICO", true)} style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(225,29,72,0.3)' }}>SIMULAR PÁNICO (NUEVA CTA)</button>
+            <button onClick={() => createEvent("PÁNICO", true)} style={{ width: '100%', padding: '16px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>SIMULAR PÁNICO</button>
           </div>
         </aside>
       </main>
