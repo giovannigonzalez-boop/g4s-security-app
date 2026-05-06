@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ShieldCheck, RefreshCw, CheckCircle2, XCircle, 
-  LogOut, AlertTriangle, MapPin, Radio, ShieldAlert 
+  Home, ShieldCheck, RefreshCw, CheckCircle2, 
+  LogOut, MapPin, ShieldAlert 
 } from 'lucide-react';
 
 export default function G4SUnifiedFinalV2() {
@@ -44,14 +44,12 @@ export default function G4SUnifiedFinalV2() {
           const evento = item.tipo_evento || "";
           let eventCode = "LOGGED"; 
           
-          // Lógica para detectar PÁNICO y activar el BOTÓN ROJO DE ANULACIÓN
+          // Lógica para activar el BOTÓN ROJO y ALERTAS
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
-          } 
-          // Lógica para SISTEMA ARMADO/DESARMADO (Iconos Verdes)
-          else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
+          } else if (evento.includes("Activacion") || evento.includes("Armado")) {
             eventCode = "CLOSING";
-          } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
+          } else if (evento.includes("Anulacion") || evento.includes("Desarmado")) {
             eventCode = "OPENING";
           }
 
@@ -73,7 +71,7 @@ export default function G4SUnifiedFinalV2() {
         }
       }
     } catch (err) {
-      console.error("Error cargando datos:", err);
+      console.error("Error:", err);
     }
     setLoading(false);
   };
@@ -111,45 +109,4 @@ export default function G4SUnifiedFinalV2() {
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
 
-      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
-        <section>
-          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
-          
-          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Historial Real G4S ARC</h3>
-              <div onClick={fetchData} style={{ cursor: 'pointer' }}>
-                <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
-              </div>
-            </div>
-
-            {logs.length === 0 && !loading && <p style={{textAlign:'center', color:'#94A3B8'}}>No hay eventos recientes</p>}
-            
-            {logs.map((log) => (
-              <div key={log.id} onClick={() => setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '18px' }}>
-                  <div style={{ backgroundColor: log.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
-                    <ShieldCheck size={22} color={log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '800', fontSize: '15px' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • CTA: {log.cuenta}</div>
-                  </div>
-                </div>
-
-                {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 15px rgba(225, 29, 72, 0.3)' }}>
-                    ANULAR ALERTA PÁNICO
-                  </button>
-                )}
-                
-                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div style={{ 
-              width: '120px', height: '120px', borderRadius: '50%',
+      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30
