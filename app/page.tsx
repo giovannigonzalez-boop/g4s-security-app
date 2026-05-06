@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Home, ShieldCheck, RefreshCw, CheckCircle2, 
-  LogOut, MapPin, ShieldAlert 
+  LogOut, MapPin, ShieldAlert, Radio, Lock, Unlock 
 } from 'lucide-react';
 
-export default function G4SUnifiedFinalV2() {
+export default function G4SARC_FinalConsole() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -15,153 +15,145 @@ export default function G4SUnifiedFinalV2() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
-      setSession(true);
-    } else {
-      alert('Credenciales incorrectas.');
-    }
+    if (username.toLowerCase() === 'admin' && password === 'G4S2026*') setSession(true);
+    else alert('Credenciales incorrectas.');
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      const response = await fetch(`${supabaseUrl}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
         headers: {
-          'apikey': supabaseKey || '',
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-store'
-      });
-
-      const data = await response.json();
-
-      if (Array.isArray(data)) {
-        const mappedLogs = data.map((item: any) => {
-          const evento = item.tipo_evento || "";
-          let eventCode = "LOGGED"; 
-          
-          // Lógica exacta de tu documentación para activar colores y botones
-          if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico") || evento.toLowerCase().includes("alarma")) {
-            eventCode = "BURGLARY";
-          } else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
-            eventCode = "CLOSING";
-          } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
-            eventCode = "OPENING";
-          }
-
-          return {
-            id: item.id,
-            nombre_cliente: item.nombre_cliente || "Cliente G4S",
-            cuenta: item.cuenta || "N/A",
-            tipo_evento: evento,
-            fecha_evento: item.created_at ? new Date(item.created_at).toLocaleTimeString() : "N/A",
-            EventCode: eventCode,
-            latitud: item.latitud || 10.9685,
-            longitud: item.longitud || -74.7813
-          };
-        });
-
-        setLogs(mappedLogs);
-        if (mappedLogs.length > 0) {
-          setCoords({ lat: mappedLogs[0].latitud, lng: mappedLogs[0].longitud });
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
         }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const mapped = data.map(item => {
+          const ev = (item.tipo_evento || "").toLowerCase();
+          let type = "NORMAL";
+          if (ev.includes("panico") || ev.includes("person") || ev.includes("alarma")) type = "ALARM";
+          if (ev.includes("armado") || ev.includes("cierre") || ev.includes("desarmado")) type = "SYSTEM";
+          
+          return { ...item, category: type };
+        });
+        setLogs(mapped);
+        if (mapped.length > 0) setCoords({ lat: mapped[0].latitud || 10.9685, lng: mapped[0].longitud || -74.7813 });
       }
-    } catch (err) {
-      console.error("Error:", err);
-    }
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { 
-    if (session) fetchData(); 
-  }, [session]);
+  useEffect(() => { if (session) fetchData(); }, [session]);
 
-  const G4SLogo = ({ size = "normal" }: { size?: string }) => (
-    <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px 25px' : '10px 15px', borderRadius: '8px', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)', minWidth: size === "large" ? '120px' : '70px' }}>
-      <span style={{ fontSize: size === "large" ? '32px' : '20px', fontWeight: '900', lineHeight: 0.9 }}>G4S</span>
-      <span style={{ fontSize: size === "large" ? '14px' : '10px', fontWeight: 'bold', letterSpacing: '3px', marginTop: '2px', borderTop: '1px solid rgba(255,255,255,0.3)', width: '100%', textAlign: 'center' }}>ARC</span>
+  const G4SLogo = ({ size = "normal" }) => (
+    <div style={{ backgroundColor: '#E11D48', color: 'white', padding: size === "large" ? '15px' : '10px', borderRadius: '8px', textAlign: 'center', display: 'inline-block' }}>
+      <div style={{ fontSize: size === "large" ? '24px' : '18px', fontWeight: '900' }}>G4S</div>
+      <div style={{ fontSize: '10px', letterSpacing: '2px', borderTop: '1px solid white' }}>ARC</div>
     </div>
   );
 
-  if (!session) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
-        <form onSubmit={handleLogin} style={{ backgroundColor: '#FFFFFF', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '30px' }}><G4SLogo size="large" /></div>
-          <input type="text" placeholder="Usuario" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '16px', boxSizing: 'border-box' }} />
-          <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px', boxSizing: 'border-box' }} />
-          <button type="submit" style={{ width: '100%', padding: '16px', backgroundColor: '#E11D48', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>INGRESAR</button>
-        </form>
-      </div>
-    );
-  }
+  if (!session) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
+      <form onSubmit={handleLogin} style={{ background: 'white', padding: '40px', borderRadius: '24px', width: '320px', textAlign: 'center' }}>
+        <G4SLogo size="large" /><br/><br/>
+        <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+        <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #ddd' }} />
+        <button style={{ width: '100%', padding: '12px', background: '#E11D48', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>ENTRAR</button>
+      </form>
+    </div>
+  );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
-      <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
-        <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
-        <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F1F5F9', fontFamily: 'sans-serif' }}>
+      {/* Sidebar */}
+      <aside style={{ width: '100px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', borderRight: '1px solid #e2e8f0' }}>
+        <G4SLogo />
+        <div style={{ marginTop: '40px', color: '#E11D48' }}><Home size={30} /></div>
         <div style={{ flex: 1 }} />
-        <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
+        <LogOut onClick={() => setSession(false)} style={{ cursor: 'pointer', color: '#94A3B8', marginBottom: '20px' }} />
       </aside>
 
-      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
+      <main style={{ flex: 1, padding: '40px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' }}>
         <section>
-          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
-          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Historial Real G4S ARC</h3>
-              <div onClick={fetchData} style={{ cursor: 'pointer' }}>
-                <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
-              </div>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: '800' }}>Consola de Monitoreo G4S</h1>
+            <button onClick={fetchData} style={{ background: 'white', border: '1px solid #ddd', padding: '10px', borderRadius: '12px' }}>
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '24px', padding: '25px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
             {logs.map((log) => (
-              <div key={log.id} onClick={() => setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '18px' }}>
-                  <div style={{ backgroundColor: log.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
-                    <ShieldCheck size={22} color={log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'} />
+              <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ background: log.category === 'ALARM' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
+                    {log.category === 'ALARM' ? <ShieldAlert color="#E11D48" /> : <ShieldCheck color="#10B981" />}
                   </div>
                   <div>
-                    <div style={{ fontWeight: '800', fontSize: '15px' }}>{log.tipo_evento}</div>
-                    <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • CTA: {log.cuenta}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{log.tipo_evento}</div>
+                    <div style={{ fontSize: '12px', color: '#64748B' }}>{log.nombre_cliente} • CTA: {log.cuenta}</div>
                   </div>
                 </div>
-                {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 15px rgba(225, 29, 72, 0.3)' }}>
-                    ANULAR ALERTA PÁNICO
-                  </button>
-                )}
-                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {log.category === 'ALARM' ? (
+                    <button style={{ background: '#E11D48', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>
+                      ANULAR FALSA ALARMA
+                    </button>
+                  ) : (
+                    <button style={{ background: '#0F172A', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center' }}>
+                      <Lock size={12} /> ARMAR / DESARMAR
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </section>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
+          {/* Status Card */}
+          <div style={{ background: 'white', padding: '30px', borderRadius: '32px', textAlign: 'center' }}>
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: logs[0]?.category === 'ALARM' ? '#FFF1F2' : '#F0FDF4', border: `5px solid ${logs[0]?.category === 'ALARM' ? '#E11D48' : '#10B981'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              {logs[0]?.category === 'ALARM' ? <ShieldAlert size={50} color="#E11D48" /> : <CheckCircle2 size={50} color="#10B981" />}
             </div>
-            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
-            </strong>
+            <h3 style={{ margin: 0, color: logs[0]?.category === 'ALARM' ? '#E11D48' : '#10B981' }}>
+              {logs[0]?.category === 'ALARM' ? 'ALERTA DETECTADA' : 'SISTEMA PROTEGIDO'}
+            </h3>
           </div>
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <MapPin size={20} color="#E11D48" />
-              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
+
+          {/* Map Card */}
+          <div style={{ background: 'white', padding: '20px', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', fontWeight: 'bold' }}>
+              <MapPin color="#E11D48" size={20} /> UBICACIÓN ARC
             </div>
-            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
-            </div>
+            <img 
+              src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=15&l=map&size=340,200&pt=${coords.lng},${coords.lat},pm2rdl`} 
+              style={{ width: '100%', borderRadius: '20px' }} 
+              alt="Mapa"
+            />
+          </div>
+
+          {/* SIMULADOR DE PÁNICO (Para tu demo) */}
+          <div style={{ background: '#0F172A', color: 'white', padding: '20px', borderRadius: '24px', textAlign: 'center' }}>
+            <Radio size={24} color="#E11D48" style={{ marginBottom: '10px' }} />
+            <div style={{ fontSize: '13px', marginBottom: '15px' }}>MODO SIMULACIÓN</div>
+            <button 
+              onClick={() => alert('Simulando señal de pánico... (Inserta un registro con "Panico" en tu Supabase)')}
+              style={{ background: '#E11D48', color: 'white', border: 'none', padding: '10px', borderRadius: '10px', width: '100%', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              SIMULAR SEÑAL DE PÁNICO
+            </button>
           </div>
         </aside>
       </main>
-      <style jsx>{` .animate-spin { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } `}</style>
+
+      <style jsx>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
