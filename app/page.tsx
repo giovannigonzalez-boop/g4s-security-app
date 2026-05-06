@@ -10,10 +10,10 @@ export default function G4SUnifiedFinalV2() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [logs, setLogs] = useState<any[]>([]);
-  const [isArmed, setIsArmed] = useState(true);
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
+  // Credenciales de acceso
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
@@ -23,38 +23,59 @@ export default function G4SUnifiedFinalV2() {
     }
   };
 
-  // --- FUNCIÓN DE MANITOU CORREGIDA ---
+  // --- FUNCIÓN DE CONEXIÓN DIRECTA A SUPABASE ---
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/manitou/eventos');
-      const result = await response.json();
-      
-      // CAMBIO CLAVE: Entramos a result.data.Results porque así viene de Manitou
-      const rawData = result.data?.Results || result.data || [];
+      // Usamos las variables de entorno de Vercel para conectar a Supabase
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      if (result.success && Array.isArray(rawData)) {
-        const mappedLogs = rawData.map((item: any) => ({
-          id: item.Id || item.EventID || Math.random(),
-          // Ajustamos los nombres según lo que vimos en la respuesta real de tu pantalla
-          nombre_cliente: item.CustomerName || item.Name || "Cliente G4S",
-          cuenta: item.CustomerId || "N/A",
-          tipo_evento: item.EventDescription || "Evento Detectado",
-          fecha_evento: item.Time ? new Date(item.Time).toLocaleTimeString() : new Date().toLocaleTimeString(),
-          latitud: item.Latitude || 10.9685,
-          longitud: item.Longitude || -74.7813
-        }));
+      const response = await fetch(`${supabaseUrl}/rest/v1/alarm_logs?select=*&order=created_at.desc`, {
+        headers: {
+          'apikey': supabaseKey || '',
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        const mappedLogs = data.map((item: any) => {
+          const evento = item.tipo_evento || "";
+          
+          // LÓGICA DE NEGOCIO G4S ARC: Identificación de códigos para la interfaz
+          let eventCode = "LOGGED"; // Gris por defecto
+          
+          if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
+            eventCode = "CLOSING"; // Activa iconos de sistema armado
+          } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
+            eventCode = "OPENING"; // Activa iconos de sistema desarmado
+          } else if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
+            eventCode = "BURGLARY"; // ACTIVA BOTÓN ROJO DE ANULAR PÁNICO
+          }
+
+          return {
+            id: item.id,
+            nombre_cliente: item.nombre_cliente || "Cliente G4S",
+            cuenta: item.cuenta || "N/A",
+            tipo_evento: evento,
+            fecha_evento: new Date(item.created_at).toLocaleTimeString(),
+            EventCode: eventCode,
+            latitud: item.latitud || 10.9685,
+            longitud: item.longitud || -74.7813
+          };
+        });
 
         setLogs(mappedLogs);
-        
         if (mappedLogs.length > 0) {
           setCoords({ lat: mappedLogs[0].latitud, lng: mappedLogs[0].longitud });
         }
-      } else {
-        console.log("No se encontraron resultados en .Results");
       }
     } catch (err) {
-      console.error("Error conectando con el túnel:", err);
+      console.error("Error cargando datos de Supabase:", err);
     }
     setLoading(false);
   };
@@ -70,6 +91,7 @@ export default function G4SUnifiedFinalV2() {
     </div>
   );
 
+  // Pantalla de Login
   if (!session) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
@@ -83,8 +105,10 @@ export default function G4SUnifiedFinalV2() {
     );
   }
 
+  // Dashboard Principal
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
+      {/* Sidebar */}
       <aside style={{ width: '110px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ marginBottom: '50px' }}><G4SLogo size="normal" /></div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px', marginBottom: '25px' }}><Home size={28} color="#E11D48" /></div>
@@ -92,40 +116,61 @@ export default function G4SUnifiedFinalV2() {
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
 
+      {/* Main Content */}
       <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
         <section>
           <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
+          
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Historial Real Manitou</h3>
+              <h3 style={{ margin: 0 }}>Historial de Señales (Supabase)</h3>
               <div onClick={fetchData} style={{ cursor: 'pointer' }}>
                 <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
               </div>
             </div>
+
             {logs.length === 0 && !loading && <p style={{textAlign:'center', color:'#94A3B8'}}>No hay eventos recientes</p>}
+            
             {logs.map((log) => (
-              <div key={log.id} onClick={() => setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer' }}>
+              <div key={log.id} onClick={() => setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', alignItems: 'center' }}>
                 <div style={{ display: 'flex', gap: '18px' }}>
-                  <div style={{ backgroundColor: '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
-                    <ShieldCheck size={22} color="#10B981" />
+                  <div style={{ backgroundColor: log.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
+                    <ShieldCheck size={22} color={log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'} />
                   </div>
                   <div>
                     <div style={{ fontWeight: '800', fontSize: '15px' }}>{log.tipo_evento}</div>
                     <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • CTA: {log.cuenta}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
+
+                {/* BOTÓN ROJO DE ANULAR (Solo si es Pánico/Burglary) */}
+                {log.EventCode === 'BURGLARY' && (
+                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    ANULAR FALSA ALARMA
+                  </button>
+                )}
+                
+                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
               </div>
             ))}
           </div>
         </section>
 
+        {/* Sidebar Derecha (Widgets) */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
           <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
-            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid #10B981`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', backgroundColor: '#F0FDF4' }}>
-              <CheckCircle2 size={55} color="#10B981" />
+            <div style={{ 
+              width: '120px', height: '120px', borderRadius: '50%', 
+              border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              margin: '0 auto 20px', 
+              backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' 
+            }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
             </div>
-            <strong style={{ fontSize: '16px', color: '#10B981' }}>SISTEMA MONITOREADO</strong>
+            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
+            </strong>
           </div>
 
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
