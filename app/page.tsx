@@ -44,12 +44,12 @@ export default function G4SUnifiedFinalV2() {
           const evento = item.tipo_evento || "";
           let eventCode = "LOGGED"; 
           
-          // Lógica para activar el BOTÓN ROJO y ALERTAS
+          // Lógica operativa ARC para iconos y botones
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
-          } else if (evento.includes("Activacion") || evento.includes("Armado")) {
+          } else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
             eventCode = "CLOSING";
-          } else if (evento.includes("Anulacion") || evento.includes("Desarmado")) {
+          } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
             eventCode = "OPENING";
           }
 
@@ -71,7 +71,7 @@ export default function G4SUnifiedFinalV2() {
         }
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error cargando Supabase:", err);
     }
     setLoading(false);
   };
@@ -109,4 +109,55 @@ export default function G4SUnifiedFinalV2() {
         <LogOut size={26} color="#94A3B8" onClick={() => setSession(false)} style={{ cursor: 'pointer', marginBottom: '30px' }} />
       </aside>
 
-      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30
+      <main style={{ flex: 1, marginLeft: '110px', padding: '40px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px' }}>
+        <section>
+          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#0F172A', marginBottom: '32px' }}>Log de Activaciones</h1>
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '35px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Historial Real G4S ARC</h3>
+              <div onClick={fetchData} style={{ cursor: 'pointer' }}>
+                <RefreshCw size={22} color="#E11D48" className={loading ? 'animate-spin' : ''} />
+              </div>
+            </div>
+            {logs.map((log) => (
+              <div key={log.id} onClick={() => setCoords({lat: log.latitud, lng: log.longitud})} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid #F1F5F9', cursor: 'pointer', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '18px' }}>
+                  <div style={{ backgroundColor: log.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4', padding: '12px', borderRadius: '12px' }}>
+                    <ShieldCheck size={22} color={log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '15px' }}>{log.tipo_evento}</div>
+                    <div style={{ fontSize: '13px', color: '#64748B' }}>{log.nombre_cliente} • CTA: {log.cuenta}</div>
+                  </div>
+                </div>
+                {log.EventCode === 'BURGLARY' && (
+                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}>
+                    ANULAR ALERTA PÁNICO
+                  </button>
+                )}
+                <div style={{ fontSize: '12px', color: log.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981', fontWeight: '900' }}>{log.fecha_evento}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
+            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
+            </div>
+            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
+              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
+            </strong>
+          </div>
+          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
+            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
+              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
+            </div>
+          </div>
+        </aside>
+      </main>
+      <style jsx>{` .animate-spin { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } `}</style>
+    </div>
+  );
+}
