@@ -2,24 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { Home, ShieldCheck, RefreshCw, LogOut, ShieldAlert, Radio, Lock, Unlock, MapPin } from 'lucide-react';
 
-export default function G4S_Console_Total_Final_V5() {
-  // Manejo de sesión restaurado
+export default function G4S_Console_Master_Final() {
   const [session, setSession] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<any>(null);
   const [coords, setCoords] = useState({ lat: 10.9685, lng: -74.7813 });
 
-  // Función de Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (username.toLowerCase() === 'admin' && password === 'G4S2026*') {
       setSession(true);
     } else {
-      alert('Credenciales incorrectas. Verifique usuario y contraseña.');
+      alert('Credenciales incorrectas.');
     }
   };
 
@@ -93,7 +90,12 @@ export default function G4S_Console_Total_Final_V5() {
   const delta = 0.002;
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - delta},${coords.lat - delta},${coords.lng + delta},${coords.lat + delta}&layer=mapnik&marker=${coords.lat},${coords.lng}`;
 
-  // VISTA DE LOGIN
+  // FUNCIÓN PARA ABRIR GOOGLE MAPS EXTERNO
+  const openExternalMap = () => {
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`;
+    window.open(googleMapsUrl, '_blank');
+  };
+
   if (!session) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F172A', fontFamily: 'sans-serif' }}>
       <form onSubmit={handleLogin} style={{ background: 'white', padding: '50px 40px', borderRadius: '32px', width: '380px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
@@ -111,16 +113,13 @@ export default function G4S_Console_Total_Final_V5() {
     </div>
   );
 
-  // VISTA PRINCIPAL
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
       <aside style={{ width: '90px', backgroundColor: 'white', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 0', position: 'fixed', height: '100vh' }}>
         <div style={{ background: '#E11D48', color: 'white', padding: '10px', borderRadius: '8px', fontWeight: '900', fontSize: '18px', marginBottom: '40px' }}>G4S</div>
         <div style={{ backgroundColor: '#FFF1F2', padding: '12px', borderRadius: '15px' }}><Home size={28} color="#E11D48" /></div>
         <div style={{ flex: 1 }} />
-        
-        {/* BOTÓN CERRAR SESIÓN RESTAURADO */}
-        <button onClick={() => setSession(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: '20px', color: '#94A3B8', transition: '0.2s' }}>
+        <button onClick={() => setSession(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: '20px', color: '#94A3B8' }}>
           <LogOut size={30} />
           <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>SALIR</div>
         </button>
@@ -169,9 +168,18 @@ export default function G4S_Console_Total_Final_V5() {
              </button>
           </div>
 
+          {/* GPS INTERACTIVO CON ENLACE EXTERNO */}
           <div style={{ background: 'white', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: '900', marginBottom: '10px', fontSize: '13px', display: 'flex', gap: '5px' }}><MapPin size={16} color="#E11D48" /> UBICACIÓN EN TIEMPO REAL</div>
-            <div style={{ width: '100%', height: '230px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #F1F5F9' }}>
+            <div style={{ fontWeight: '900', marginBottom: '10px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '5px' }}><MapPin size={16} color="#E11D48" /> UBICACIÓN EN TIEMPO REAL</div>
+              <span style={{ fontSize: '10px', color: '#E11D48', cursor: 'pointer', textDecoration: 'underline' }} onClick={openExternalMap}>Ver en Google Maps</span>
+            </div>
+            <div 
+              onClick={openExternalMap}
+              style={{ width: '100%', height: '230px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #F1F5F9', cursor: 'pointer', position: 'relative' }}
+            >
+               {/* Overlay para detectar el clic en todo el mapa sin interferir con el iframe */}
+               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10 }}></div>
                <iframe 
                  key={`${coords.lat}-${coords.lng}`}
                  width="100%" 
