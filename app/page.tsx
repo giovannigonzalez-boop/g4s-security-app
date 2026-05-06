@@ -44,11 +44,11 @@ export default function G4SUnifiedFinalV2() {
           const evento = item.tipo_evento || "";
           let eventCode = "LOGGED"; 
           
-          // Lógica para detectar PÁNICO y activar BOTÓN ROJO [cite: 50, 118]
+          // Lógica para detectar PÁNICO y activar el BOTÓN ROJO DE ANULACIÓN
           if (evento.toLowerCase().includes("person") || evento.toLowerCase().includes("panico")) {
             eventCode = "BURGLARY";
           } 
-          // Lógica para SISTEMA ARMADO/DESARMADO (Iconos Verdes) [cite: 47, 133, 134]
+          // Lógica para SISTEMA ARMADO/DESARMADO (Iconos Verdes)
           else if (evento.includes("Activacion") || evento.includes("Armado") || evento.includes("Cierre")) {
             eventCode = "CLOSING";
           } else if (evento.includes("Anulacion") || evento.includes("Desarmado") || evento.includes("Apertura")) {
@@ -138,7 +138,7 @@ export default function G4SUnifiedFinalV2() {
                 </div>
 
                 {log.EventCode === 'BURGLARY' && (
-                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}>
+                  <button style={{ backgroundColor: '#E11D48', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 15px rgba(225, 29, 72, 0.3)' }}>
                     ANULAR ALERTA PÁNICO
                   </button>
                 )}
@@ -152,35 +152,4 @@ export default function G4SUnifiedFinalV2() {
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
           <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '32px', textAlign: 'center' }}>
             <div style={{ 
-              width: '120px', height: '120px', borderRadius: '50%', 
-              border: `6px solid ${logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981'}`, 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              margin: '0 auto 20px', 
-              backgroundColor: logs[0]?.EventCode === 'BURGLARY' ? '#FFF1F2' : '#F0FDF4' 
-            }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? <ShieldAlert size={55} color="#E11D48" /> : <CheckCircle2 size={55} color="#10B981" />}
-            </div>
-            <strong style={{ fontSize: '16px', color: logs[0]?.EventCode === 'BURGLARY' ? '#E11D48' : '#10B981' }}>
-              {logs[0]?.EventCode === 'BURGLARY' ? 'ALERTA DETECTADA' : 'SISTEMA MONITOREADO'}
-            </strong>
-          </div>
-
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-              <MapPin size={20} color="#E11D48" />
-              <span style={{ fontWeight: '800', fontSize: '14px' }}>UBICACIÓN DE SEÑAL</span>
-            </div>
-            <div style={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <img src={`https://static-maps.yandex.ru/1.x/?ll=${coords.lng},${coords.lat}&z=14&l=map&size=400,250&pt=${coords.lng},${coords.lat},pm2rdl`} style={{ width: '100%' }} alt="Mapa" />
-            </div>
-          </div>
-        </aside>
-      </main>
-
-      <style jsx>{`
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
-}
+              width: '120px', height: '120px', borderRadius: '50%',
