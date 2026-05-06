@@ -17,25 +17,28 @@ export async function GET() {
     const rawData = await response.json();
 
     const mappedData = rawData.map((item: any) => {
-      // Lógica para que los botones cambien a verde y detecte PÁNICO
-      let finalEventCode = "LOGGED"; // Por defecto
-      let description = item.tipo_evento;
+      let finalEventCode = "LOGGED"; 
+      const evento = item.tipo_evento || "";
 
-      // Traducimos tus textos de Supabase a los estados de la App
-      if (item.tipo_evento?.includes("Activacion") || item.tipo_evento?.includes("Armado")) {
-        finalEventCode = "CLOSING"; // Esto activa el icono verde de ARMADO
-      } else if (item.tipo_evento?.includes("Anulacion") || item.tipo_evento?.includes("Desarmado")) {
-        finalEventCode = "OPENING"; // Esto activa el icono verde de DESARMADO
-      } else if (item.tipo_evento?.includes("Pánico") || item.tipo_evento?.includes("Person detected")) {
-        finalEventCode = "BURGLARY"; // Esto activa el BOTÓN ROJO DE ANULAR PÁNICO
+      // 1. Detectar PÁNICO para mostrar el BOTÓN ROJO
+      if (evento.includes("Person detected") || evento.toLowerCase().includes("panico")) {
+        finalEventCode = "BURGLARY";
+      } 
+      // 2. Detectar ARMADO para icono VERDE
+      else if (evento.includes("Activacion") || evento.includes("Cierre") || evento.includes("Armado")) {
+        finalEventCode = "CLOSING";
+      } 
+      // 3. Detectar DESARMADO/ANULACIÓN para icono VERDE
+      else if (evento.includes("Anulacion") || evento.includes("Apertura") || evento.includes("Desarmado")) {
+        finalEventCode = "OPENING";
       }
 
       return {
-        CustomerName: item.nombre_cliente,
-        EventDescription: description,
-        CustomerNo: item.cuenta,
+        CustomerName: item.nombre_cliente || "Cliente G4S",
+        EventDescription: evento,
+        CustomerNo: item.cuenta || "N/A",
         CreationTime: item.created_at,
-        EventCode: finalEventCode, // CAMBIO CLAVE para los iconos y botones
+        EventCode: finalEventCode, // Este es el que activa los botones
         lat: item.latitud,
         lng: item.longitud,
         Status: "Pending"
